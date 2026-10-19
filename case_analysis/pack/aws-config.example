@@ -1,0 +1,26 @@
+# Fill in from your existing AWS CLI config. Do not commit real account IDs into git.
+# Typical MerQube setup uses SSO, not long-lived access keys.
+
+[default]
+sso_session = merq
+sso_account_id = YOUR_ACCOUNT_ID
+sso_role_name = YOUR_ROLE
+region = us-east-1
+output = json
+
+[profile helix-prod]
+sso_session = helix
+sso_account_id = YOUR_HELIX_ACCOUNT_ID
+sso_role_name = YOUR_HELIX_ROLE
+region = us-east-1
+output = json
+
+[sso-session merq]
+sso_start_url = https://YOUR-SSO-START-URL
+sso_region = us-east-1
+sso_registration_scopes = sso:account:access
+
+[sso-session helix]
+sso_start_url = https://YOUR-SSO-START-URL
+sso_region = us-east-1
+sso_registration_scopes = sso:account:access

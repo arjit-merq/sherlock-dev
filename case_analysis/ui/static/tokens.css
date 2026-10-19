@@ -1,0 +1,63 @@
+/* Hallmark · genre: modern-minimal · macrostructure: Workbench · theme: Cobalt · enrichment: none · nav: compact rail · footer: none
+ * audience: MerQube support engineers · use: launch and monitor investigations · tone: technical
+ */
+:root {
+  --color-paper: oklch(98% 0.008 255);
+  --color-paper-raised: oklch(100% 0.004 255);
+  --color-paper-active: oklch(95% 0.018 255);
+  --color-ink: oklch(22% 0.025 255);
+  --color-ink-soft: oklch(36% 0.026 255);
+  --color-muted: oklch(49% 0.025 255);
+  --color-rule: oklch(89% 0.018 255);
+  --color-rule-strong: oklch(77% 0.025 255);
+  --color-accent: oklch(55% 0.19 255);
+  --color-accent-soft: oklch(92% 0.045 255);
+  --color-accent-ink: oklch(98% 0.008 255);
+  --color-success: oklch(52% 0.14 155);
+  --color-success-soft: oklch(94% 0.04 155);
+  --color-warning: oklch(60% 0.16 70);
+  --color-warning-soft: oklch(95% 0.045 70);
+  --color-error: oklch(55% 0.19 25);
+  --color-error-soft: oklch(95% 0.04 25);
+  --color-focus: oklch(48% 0.2 255);
+  --color-overlay: oklch(18% 0.02 255 / 0.46);
+
+  --font-display: "Fira Code", "SFMono-Regular", Menlo, monospace;
+  --font-body: "Fira Sans", "Avenir Next", ui-sans-serif, sans-serif;
+  --font-mono: "Fira Code", "SFMono-Regular", Menlo, monospace;
+
+  --space-3xs: 0.125rem;
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+  --space-3xl: 4rem;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-md: 1.125rem;
+  --text-lg: 1.375rem;
+  --text-xl: clamp(1.75rem, 4vw, 2.75rem);
+
+  --radius-sm: 0.375rem;
+  --radius-md: 0.625rem;
+  --radius-pill: 999px;
+  --rule-thin: 1px;
+
+  --dur-micro: 120ms;
+  --dur-short: 220ms;
+  --dur-long: 420ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  --z-base: 1;
+  --z-raised: 10;
+  --z-sticky: 200;
+  --z-modal: 400;
+  --z-toast: 500;
+}

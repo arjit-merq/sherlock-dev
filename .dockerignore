@@ -1,0 +1,12 @@
+.git
+**/.env
+**/.env.*
+!**/.env.example
+**/runs/**
+**/.DS_Store
+**/__pycache__
+**/.pytest_cache
+**/dist
+**/*.pem
+**/*.key
+build-context

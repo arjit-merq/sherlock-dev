@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sherlock — 3 Real-World Examples</title>
+<style>
+  :root {
+    --bg: #08111f;
+    --panel: #0f1b2d;
+    --text: #eef4ff;
+    --muted: #96a7bf;
+    --blue: #66a3ff;
+    --cyan: #5ee8da;
+    --green: #6ee7a8;
+    --amber: #ffc866;
+    --purple: #b596ff;
+    --shadow: 0 18px 50px rgba(0,0,0,.28);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at 15% 15%, rgba(102,163,255,.12), transparent 28%),
+      radial-gradient(circle at 85% 20%, rgba(181,150,255,.10), transparent 26%),
+      linear-gradient(180deg, #07101c 0%, var(--bg) 100%);
+    color: var(--text);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
+  .page {
+    width: min(1500px, calc(100% - 32px));
+    margin: 0 auto;
+    padding: 40px 0 48px;
+  }
+
+  .eyebrow {
+    color: var(--cyan);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  h1 {
+    margin: 0 0 22px;
+    font-size: clamp(26px, 3.5vw, 42px);
+    line-height: 1.08;
+    letter-spacing: -.03em;
+  }
+
+  .examples {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    align-items: stretch;
+  }
+
+  .pill-card {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding: 16px 16px 14px;
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 20px;
+    background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.018));
+    box-shadow: var(--shadow);
+  }
+
+  .pill-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 4px;
+    background: var(--accent);
+  }
+
+  .pill-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .num {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    border-radius: 9px;
+    background: color-mix(in srgb, var(--accent) 18%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 850;
+  }
+
+  .pill-head h2 {
+    margin: 0;
+    font-size: 14.5px;
+    line-height: 1.25;
+    letter-spacing: -.01em;
+  }
+
+  .case-ref {
+    margin-top: 3px;
+    color: var(--accent);
+    font-size: 10.5px;
+    font-weight: 750;
+    letter-spacing: .02em;
+  }
+
+  .body {
+    color: #dce8f8;
+    font-size: 11.5px;
+    line-height: 1.45;
+  }
+
+  .body p {
+    margin: 0 0 8px;
+  }
+
+  .body p:last-child {
+    margin-bottom: 0;
+  }
+
+  .body strong {
+    color: var(--text);
+  }
+
+  .chain {
+    margin: 8px 0;
+    padding: 8px 10px;
+    border-radius: 12px;
+    border: 1px solid color-mix(in srgb, var(--accent) 32%, rgba(255,255,255,.08));
+    background: color-mix(in srgb, var(--accent) 7%, var(--panel));
+    color: var(--text);
+    font-size: 10.5px;
+    font-weight: 650;
+    line-height: 1.4;
+  }
+
+  .key-message {
+    margin-top: 14px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    border: 1px solid rgba(94,232,218,.22);
+    background: linear-gradient(135deg, rgba(94,232,218,.08), rgba(102,163,255,.05));
+  }
+
+  .key-message .label {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--cyan);
+    font-size: 10.5px;
+    font-weight: 850;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+
+  .key-message p {
+    margin: 0 0 7px;
+    color: #dce8f8;
+    font-size: 12.5px;
+    line-height: 1.5;
+  }
+
+  .key-message p:last-child {
+    margin-bottom: 0;
+  }
+
+  .key-message strong {
+    color: var(--text);
+  }
+
+  .c1 { --accent: var(--blue); }
+  .c2 { --accent: var(--purple); }
+  .c3 { --accent: var(--green); }
+
+  body.embed {
+    background: #0d1420;
+    min-height: auto;
+  }
+
+  body.embed .page {
+    width: 100%;
+    padding: 8px 10px 8px;
+  }
+
+  body.embed .page-header {
+    display: none;
+  }
+
+  body.embed .examples {
+    gap: 10px;
+  }
+
+  body.embed .pill-card {
+    padding: 10px 11px 9px;
+    border-radius: 14px;
+  }
+
+  body.embed .pill-head {
+    margin-bottom: 7px;
+  }
+
+  body.embed .pill-head h2 {
+    font-size: 12px;
+  }
+
+  body.embed .case-ref {
+    font-size: 9.5px;
+  }
+
+  body.embed .num {
+    width: 24px;
+    height: 24px;
+    font-size: 11px;
+  }
+
+  body.embed .body {
+    font-size: 9.8px;
+    line-height: 1.35;
+  }
+
+  body.embed .body p {
+    margin-bottom: 5px;
+  }
+
+  body.embed .chain {
+    margin: 5px 0;
+    padding: 6px 7px;
+    font-size: 9.2px;
+  }
+
+  body.embed .key-message {
+    margin-top: 8px;
+    padding: 9px 11px;
+  }
+
+  body.embed .key-message p {
+    font-size: 10.4px;
+    line-height: 1.4;
+    margin-bottom: 4px;
+  }
+
+  @media (max-width: 900px) {
+    .examples {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+</head>
+<body>
+  <main class="page">
+    <div class="page-header">
+      <div class="eyebrow">Sherlock · Showcase</div>
+      <h1>Sherlock: 3 Real-World Examples</h1>
+    </div>
+
+    <section class="examples" aria-label="Three real-world examples">
+      <article class="pill-card c1">
+        <header class="pill-head">
+          <div class="num" aria-hidden="true">1</div>
+          <div>
+            <h2>Complex cross-system investigation</h2>
+            <div class="case-ref">PES-1167</div>
+          </div>
+        </header>
+        <div class="body">
+          <p><strong>Issue:</strong> A Bloomberg curve file for 31 August was available, but the ingestion pipeline processed the wrong date. This caused the required curve data to be missing and downstream HSIEM index calculations to fail.</p>
+          <p>A Bloomberg ingestion failure required Sherlock to investigate across Airflow logs, S3, DataAPI configuration, manifests, SecAPI, Jira history, and source code. It connected the evidence into a complete failure chain:</p>
+          <div class="chain">Holiday calendar → wrong expected file → file skipped → missing SecAPI data → downstream index failure</div>
+          <p>Sherlock also identified that simply rerunning the job would reproduce the same failure because the underlying calendar logic had not changed. It recommended the correct configuration change and recovery sequence, which matched the eventual resolution.</p>
+        </div>
+      </article>
+
+      <article class="pill-card c2">
+        <header class="pill-head">
+          <div class="num" aria-hidden="true">2</div>
+          <div>
+            <h2>Reusing a previously solved case</h2>
+            <div class="case-ref">PES-1168 / PES-352</div>
+          </div>
+        </header>
+        <div class="body">
+          <p><strong>Issue:</strong> Citi uploaded a target portfolio successfully, but its client reported the request as failed because the API response contained additional fields that its Java parser did not recognize.</p>
+          <p>Sherlock found that the Citi portfolio issue in PES-1168 closely matched PES-352, where the same API/client behavior had already been investigated.</p>
+          <p>Rather than redoing the entire investigation, Sherlock reused the established resolution while verifying the important differences in the new case, including the stored portfolio, API response, schema, and current implementation.</p>
+          <p>It correctly concluded that no MerQube rollback was required and that Citi needed to update its parser to tolerate additional response fields. That is ultimately how the case was resolved.</p>
+        </div>
+      </article>
+
+      <article class="pill-card c3">
+        <header class="pill-head">
+          <div class="num" aria-hidden="true">3</div>
+          <div>
+            <h2>Pinpointing the exact code change</h2>
+            <div class="case-ref">PES-1197 / ENG-3205</div>
+          </div>
+        </header>
+        <div class="body">
+          <p><strong>Issue:</strong> Barclays needed the RADAR report filename to contain the next calendar day, but the existing {NEXT_REPORT_DATE} token represented the next index business day. Changing the existing token could therefore affect other reports that relied on its current behavior.</p>
+          <p>For a Barclays RADAR filename requirement, Sherlock determined that changing the existing <strong>{NEXT_REPORT_DATE}</strong> token would risk affecting other reports. Instead, it proposed introducing a new <strong>{NEXT_CALENDAR_DATE}</strong> token.</p>
+          <p>Sherlock identified the required changes across the report runtime, Admin validation, and BXIIRDS6 configuration, while explicitly identifying what should remain unchanged.</p>
+          <p>Most importantly, the engineering solution that followed implemented the same design Sherlock had proposed, with Sherlock documenting the solution before the corresponding human proposal and ENG ticket.</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="key-message" aria-label="Key message">
+      <span class="label">The Key message</span>
+      <p><strong>Sherlock is useful at very different levels of investigation.</strong></p>
+      <p>For complex incidents, it can trace evidence across systems until it identifies the complete root-cause chain.</p>
+      <p>For recurring incidents, it can find and reuse institutional knowledge that would otherwise be buried in old Jira cases.</p>
+      <p>And when engineering work is required, it can move from diagnosis to a precise, scoped implementation recommendation, including what should change and, just as importantly, what should not.</p>
+    </section>
+  </main>
+
+  <script>
+    if (window.location.search.includes("embed=1") || window.self !== window.top) {
+      document.body.classList.add("embed");
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sherlock — How It Runs</title>
+<style>
+  :root {
+    --bg: #08111f;
+    --panel: #0f1b2d;
+    --panel-2: #13233a;
+    --text: #eef4ff;
+    --muted: #96a7bf;
+    --line: #314763;
+    --blue: #66a3ff;
+    --cyan: #5ee8da;
+    --green: #6ee7a8;
+    --amber: #ffc866;
+    --purple: #b596ff;
+    --pink: #ff8bb4;
+    --shadow: 0 18px 50px rgba(0,0,0,.28);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at 15% 15%, rgba(102,163,255,.12), transparent 28%),
+      radial-gradient(circle at 85% 20%, rgba(181,150,255,.10), transparent 26%),
+      linear-gradient(180deg, #07101c 0%, var(--bg) 100%);
+    color: var(--text);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
+  .page {
+    width: min(1500px, calc(100% - 40px));
+    margin: 0 auto;
+    padding: 48px 0 64px;
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--cyan);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(30px, 4vw, 54px);
+    line-height: 1.05;
+    letter-spacing: -.04em;
+  }
+
+  .subtitle {
+    margin: 14px 0 34px;
+    max-width: 860px;
+    color: var(--muted);
+    font-size: 16px;
+    line-height: 1.65;
+  }
+
+  .workflow {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(190px, 1fr));
+    gap: 18px;
+    align-items: start;
+  }
+
+  .stage {
+    position: relative;
+    min-height: 500px;
+    padding: 18px;
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 24px;
+    background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.018));
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(10px);
+  }
+
+  .stage::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: -19px;
+    width: 20px;
+    height: 2px;
+    background: var(--line);
+  }
+  .stage::before {
+    content: "";
+    position: absolute;
+    top: calc(50% - 4px);
+    right: -19px;
+    width: 8px;
+    height: 8px;
+    border-top: 2px solid var(--line);
+    border-right: 2px solid var(--line);
+    transform: rotate(45deg);
+    z-index: 2;
+  }
+  .stage:last-child::after, .stage:last-child::before { display:none; }
+
+  .stage-head {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    margin-bottom: 18px;
+  }
+
+  .num {
+    width: 34px;
+    height: 34px;
+    border-radius: 11px;
+    display: grid;
+    place-items: center;
+    font-weight: 900;
+    color: #07101c;
+    background: var(--accent);
+    box-shadow: 0 8px 22px color-mix(in srgb, var(--accent) 30%, transparent);
+  }
+
+  .stage h2 {
+    margin: 0;
+    font-size: 17px;
+    letter-spacing: -.015em;
+  }
+
+  .node {
+    position: relative;
+    padding: 13px 14px;
+    margin: 0 0 14px;
+    border-radius: 15px;
+    border: 1px solid rgba(255,255,255,.075);
+    background: var(--panel);
+    color: #dce8f8;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .node strong {
+    display: block;
+    color: var(--text);
+    font-size: 13.5px;
+    margin-bottom: 3px;
+  }
+
+  .node small { color: var(--muted); font-size: 11.5px; }
+  .node.command { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+  .node:not(:last-child)::after {
+    content: "↓";
+    position: absolute;
+    left: 50%;
+    bottom: -15px;
+    transform: translateX(-50%);
+    color: var(--line);
+    font-weight: 900;
+  }
+
+  .branch-wrap { margin-top: 2px; }
+  .decision {
+    border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 10%, var(--panel)), var(--panel));
+  }
+  .decision::after { content: "" !important; }
+
+  .branch-labels {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin: -4px 0 8px;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    text-align: center;
+  }
+
+  .branches {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .branches .node {
+    min-width: 0;
+    min-height: 112px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0;
+    text-align: center;
+  }
+  .branches .node::after { display: none; }
+
+  .skills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 6px;
+  }
+  .skills span {
+    font-size: 10px;
+    padding: 3px 7px;
+    border-radius: 6px;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.08);
+    color: var(--muted);
+  }
+
+  .feedback {
+    grid-column: 3 / 7;
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .feedback-line {
+    flex: 1;
+    height: 28px;
+    border-left: 2px solid var(--purple);
+    border-bottom: 2px solid var(--purple);
+    border-radius: 0 0 0 14px;
+    opacity: .55;
+    position: relative;
+  }
+  .feedback-line::before {
+    content: "↖";
+    position: absolute;
+    left: -7px;
+    bottom: -9px;
+    color: var(--purple);
+    font-size: 17px;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 26px;
+  }
+  .pill {
+    padding: 8px 11px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,.08);
+    background: rgba(255,255,255,.035);
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .pill b { color: var(--text); }
+
+  .stage-duration {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin: -6px 0 16px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: .04em;
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  }
+  .stage-duration::before { content: "⏱"; font-size: 10px; }
+
+  body.embed .stage-duration {
+    margin: -4px 0 10px;
+    font-size: 9.5px;
+    padding: 3px 8px;
+  }
+
+  .s1 { --accent: var(--blue); }
+  .s2 { --accent: var(--cyan); }
+  .s3 { --accent: var(--purple); }
+  .s4 { --accent: var(--amber); }
+  .s5 { --accent: var(--green); }
+  .s6 { --accent: var(--pink); }
+
+  /* Embed mode — deck slide 4 iframe */
+  body.embed {
+    background: #0d1420;
+    min-height: auto;
+  }
+  body.embed .page {
+    width: 100%;
+    padding: 12px 10px 16px;
+  }
+  body.embed .page-header,
+  body.embed .subtitle,
+  body.embed .legend,
+  body.embed .feedback { display: none; }
+  body.embed h1 { font-size: 18px; margin-bottom: 10px; }
+  body.embed .workflow {
+    grid-template-columns: repeat(6, minmax(160px, 1fr));
+    gap: 12px;
+  }
+  body.embed .stage {
+    min-height: 420px;
+    padding: 14px;
+    border-radius: 18px;
+  }
+  body.embed .stage h2 { font-size: 14px; }
+  body.embed .node { font-size: 12px; padding: 10px 11px; margin-bottom: 12px; }
+  body.embed .node strong { font-size: 12px; }
+  body.embed .branches .node {
+    min-height: 72px;
+    padding: 8px;
+  }
+  body.embed .branch-labels {
+    margin: -6px 0 6px;
+  }
+
+  @media (max-width: 1180px) {
+    .workflow { grid-template-columns: repeat(3, 1fr); }
+    .stage { min-height: auto; }
+    .stage::after, .stage::before { display:none; }
+    .feedback { grid-column: 1 / -1; }
+    body.embed .workflow { grid-template-columns: repeat(6, minmax(140px, 1fr)); overflow-x: auto; }
+  }
+
+  @media (max-width: 760px) {
+    .page { width: min(100% - 24px, 760px); padding-top: 28px; }
+    .workflow { grid-template-columns: 1fr; }
+    .feedback { grid-column: 1; }
+    .branches { grid-template-columns: 1fr; }
+    .branch-labels { display:none; }
+  }
+</style>
+</head>
+<body>
+  <main class="page">
+    <div class="page-header">
+      <div class="eyebrow">Sherlock · Case Analysis</div>
+      <h1>From Jira intake to reusable operational knowledge</h1>
+      <p class="subtitle">
+        A route-first workflow that avoids repeating known work, makes every investigation step intentional,
+        and turns each completed case into a faster path for the next one.
+      </p>
+    </div>
+
+    <section class="workflow" aria-label="Sherlock workflow">
+      <article class="stage s1">
+        <header class="stage-head"><div class="num">1</div><h2>Intake</h2></header>
+        <div class="stage-duration">Wait time: 5 min</div>
+        <div class="node"><strong>Jira PES / ENG ticket</strong><small>Case enters the workflow</small></div>
+        <div class="node"><strong>Poll every 60s</strong><small>Automatic intake while UI is up</small></div>
+        <div class="node"><strong>Wait: created + 5 min</strong><small>Time for support to fill Jira</small></div>
+        <div class="node"><strong>Manual UI / CLI</strong><small>Alternative direct trigger</small></div>
+      </article>
+
+      <article class="stage s2">
+        <header class="stage-head"><div class="num">2</div><h2>Prepare</h2></header>
+        <div class="stage-duration">~1 min</div>
+        <div class="node"><strong>Preflight</strong><small>Validate creds, agent, environment</small></div>
+        <div class="node"><strong>Sync code repos</strong><small>Pull current code and context</small></div>
+        <div class="node"><strong>Slack start message</strong><small>Sherlock posts investigation start</small></div>
+      </article>
+
+      <article class="stage s3">
+        <header class="stage-head"><div class="num">3</div><h2>Route first</h2></header>
+        <div class="stage-duration">~1 min</div>
+        <div class="node"><strong>Playbooks INDEX.md</strong><small>Find the known route before exploring</small></div>
+        <div class="node"><strong>Prior FINAL.md + KB runbooks</strong><small>PES/ENG · scripts · Notion · runbooks</small></div>
+
+        <div class="branch-wrap">
+          <div class="node decision"><strong>Sibling case?</strong><small>Does a closely related case already exist?</small></div>
+          <div class="branch-labels"><span>Yes</span><span>No</span></div>
+          <div class="branches">
+            <div class="node"><strong>Optimized</strong><small>Investigate delta only</small></div>
+            <div class="node"><strong>Full</strong><small>Run full investigation</small></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="stage s4">
+        <header class="stage-head"><div class="num">4</div><h2>Investigate with purpose</h2></header>
+        <div class="stage-duration">~5 min</div>
+        <div class="node">
+          <strong>Collect evidence</strong>
+          <small>Jira · Slack threads · PRs · skills</small>
+          <div class="skills">
+            <span>Airflow</span><span>S3</span><span>SecAPI</span><span>DB1</span><span>Code</span><span>Pods</span>
+          </div>
+        </div>
+        <div class="node"><strong>Explain each finding</strong><small>Record why it mattered, not just what was found</small></div>
+        <div class="node"><strong>Decision gate</strong><small>False alarm · ops fix · inventory · enhancement · blocked · defect</small></div>
+      </article>
+
+      <article class="stage s5">
+        <header class="stage-head"><div class="num">5</div><h2>Output</h2></header>
+        <div class="stage-duration">~5 min</div>
+        <div class="node"><strong>FINAL.md</strong><small>Canonical investigation result</small></div>
+        <div class="node"><strong>Draft Jira comment</strong><small>Human review and paste</small></div>
+        <div class="node"><strong>Slack thread + canvas</strong><small>Progress and final summary</small></div>
+      </article>
+
+      <article class="stage s6">
+        <header class="stage-head"><div class="num">6</div><h2>Learn / backtrack</h2></header>
+        <div class="stage-duration">~5 min</div>
+        <div class="node command"><strong>distill_case.sh</strong><small>Extract reusable knowledge</small></div>
+        <div class="node"><strong>Update playbook</strong><small>Optimal path + skip list</small></div>
+        <div class="node"><strong>Feed future routing</strong><small>Next similar case starts here, not from scratch</small></div>
+      </article>
+
+      <div class="feedback">
+        <div class="feedback-line"></div>
+        <span>Learning loops back into <b>Route first</b>, so completed cases continuously improve future investigations.</span>
+      </div>
+    </section>
+
+    <div class="legend">
+      <div class="pill"><b>Automation:</b> polling + shell entrypoint</div>
+      <div class="pill"><b>Human control:</b> manual trigger + Jira paste</div>
+      <div class="pill"><b>Optimization:</b> sibling detection → delta-only path</div>
+      <div class="pill"><b>Knowledge loop:</b> FINAL.md → distill → playbook</div>
+    </div>
+  </main>
+
+  <script>
+    if (window.location.search.includes("embed=1") || window.self !== window.top) {
+      document.body.classList.add("embed");
+    }
+  </script>
+</body>
+</html>

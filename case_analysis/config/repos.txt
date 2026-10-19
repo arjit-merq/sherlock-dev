@@ -1,0 +1,13 @@
+# Relative to workspace root. One git checkout per line.
+# Lines starting with # are ignored. Used by scripts/sync_repos.sh.
+codebase/dev
+codebase/airflow-dags
+codebase/merq-admin-website
+codebase/merq-admin-ui
+codebase/python-merq-utils
+codebase/python-platform
+codebase/python-M3
+codebase/options
+codebase/data-scripts
+# skill_scripts may be a nested tree without its own .git — skip if missing
+# codebase/skill_scripts

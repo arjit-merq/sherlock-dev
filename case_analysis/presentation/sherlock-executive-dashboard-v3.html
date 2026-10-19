@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MerQube &middot; Sherlock Accuracy Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #f6efe3; --deep: #100c08; --mint: #ff9d42; --mint-dim: #d9822f; --paper: #14100b;
+    --card: #211a13; --line: #43362590; --muted: #ab9a80; --body: #d9cab3;
+    --correct: #8fd694; --partial: #ffd166; --wrong: #ff6b5b; --serif: "Fraunces", Georgia, serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: "DM Sans", system-ui, sans-serif; color: var(--ink);
+    background: radial-gradient(1200px 500px at 10% -10%, rgba(255,157,66,0.12), transparent 60%),
+      radial-gradient(900px 400px at 100% 0%, rgba(85,211,196,0.09), transparent 55%), var(--paper);
+  }
+
+  h1, h2, .brand h1 { font-family: var(--serif); }
+
+  header.hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 1.5rem;
+    padding: 2rem 2.5rem 1.35rem; border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, #1c1611 0%, rgba(20,16,11,0.85) 100%); }
+  .brand { display: flex; align-items: center; gap: 1rem; }
+  .brand .logo { width: 64px; height: 54px; }
+  .brand h1 { margin: 0.15rem 0 0; font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; }
+  .brand p { margin: 0.25rem 0 0; color: var(--muted); font-size: 0.95rem; }
+  .badge { display: inline-block; background: var(--deep); color: var(--mint); padding: 0.2rem 0.55rem;
+    border-radius: 4px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+    border: 1px solid var(--line); }
+  .meta { text-align: right; color: var(--muted); font-size: 0.85rem; }
+  .meta strong { color: var(--ink); }
+
+  main { padding: 1.75rem 2.5rem 3rem; max-width: 1240px; margin: 0 auto; }
+
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 0.9rem; margin-bottom: 1.75rem; }
+  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 1rem 1.15rem; }
+  .kpi.hero-kpi { border-color: rgba(255,157,66,0.35); background: var(--deep); color: var(--ink); }
+  .kpi.hero-kpi .label { color: var(--mint); }
+  .kpi.hero-kpi .sub { color: #8a7a68; }
+  .kpi .label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .kpi .value { font-size: 2rem; font-weight: 700; margin-top: 0.15rem; letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums; }
+  .kpi .sub { font-size: 0.75rem; color: var(--muted); margin-top: 0.2rem; }
+
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 1.25rem 1.4rem 1.4rem; box-shadow: 0 8px 24px rgba(0,0,0,0.25); margin-bottom: 1.5rem; }
+  .panel > h2 { margin: 0 0 0.3rem; font-size: 1.05rem; display: flex; align-items: center; gap: 0.5rem; }
+  .panel > h2::before { content: ""; width: 8px; height: 8px; background: var(--mint); border-radius: 2px; flex-shrink: 0; }
+  .panel .sub-head { margin: 0 0 1.4rem 1rem; color: var(--muted); font-size: 0.86rem; }
+
+  .chart { display: flex; align-items: flex-end; justify-content: center; gap: 3.5rem; height: 300px;
+    padding: 0 1rem; border-bottom: 2px solid var(--line); }
+  .bar-col { display: flex; flex-direction: column; align-items: center; height: 100%; flex: 0 1 200px; }
+  .bar-value { font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .delta { font-size: 0.78rem; font-weight: 700; color: var(--correct); background: rgba(110,231,168,0.12);
+    border-radius: 999px; padding: 0.08rem 0.45rem; margin-top: 0.15rem; }
+  .bar-track { flex: 1; width: 100%; display: flex; align-items: flex-end; margin-top: 0.5rem; }
+  .bar-fill { width: 100%; background: linear-gradient(180deg, #4a3f33 0%, #2b241c 100%);
+    border-radius: 6px 6px 0 0; }
+  .bar-fill.latest { background: linear-gradient(180deg, var(--mint) 0%, var(--mint-dim) 100%); }
+  .bar-label { margin-top: 0.7rem; font-weight: 600; font-size: 0.92rem; }
+  .bar-sub { color: var(--muted); font-size: 0.78rem; margin-top: 0.1rem; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  thead th { background: var(--deep); color: var(--ink); font-weight: 600; text-align: left;
+    padding: 0.6rem 0.7rem; white-space: nowrap; border-bottom: 1px solid var(--line); }
+  thead th:first-child { border-radius: 6px 0 0 0; }
+  thead th:last-child { border-radius: 0 6px 0 0; }
+  tbody td { padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--line); vertical-align: middle; color: var(--body); }
+  tbody tr:hover td { background: rgba(255,157,66,0.06); }
+  th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.label { font-weight: 600; white-space: nowrap; color: var(--ink); }
+  td.strong { font-weight: 700; color: var(--ink); }
+  .n-correct { color: var(--correct); font-weight: 600; }
+  .n-partial { color: var(--partial); font-weight: 600; }
+  .n-wrong { color: var(--wrong); font-weight: 600; }
+
+  .window-table { margin-top: 1.5rem; }
+
+  .drivers { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.1rem; }
+  .driver { border: 1px solid var(--line); border-radius: 10px; padding: 1.1rem 1.2rem; background: rgba(255,255,255,0.03); position: relative; }
+  .driver-n { position: absolute; top: 1.1rem; right: 1.2rem; font-family: "JetBrains Mono", monospace;
+    font-size: 0.78rem; font-weight: 700; color: var(--mint-dim); }
+  .driver h3 { margin: 0 0 0.9rem; font-size: 0.98rem; font-weight: 700; padding-right: 1.5rem; }
+  .driver-metric { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.9rem; }
+  .driver-metric .from, .driver-metric .to { display: flex; flex-direction: column; }
+  .driver-metric .v { font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .driver-metric .from .v { color: var(--muted); }
+  .driver-metric .l { font-size: 0.7rem; color: var(--muted); }
+  .driver-metric .arrow { color: var(--mint-dim); font-size: 1.3rem; font-weight: 700; }
+  .driver p { margin: 0; font-size: 0.85rem; line-height: 1.55; color: var(--body); }
+
+  .miss-lede { border-left: 3px solid var(--wrong); background: rgba(255,139,139,0.08); border-radius: 0 8px 8px 0;
+    padding: 0.9rem 1.1rem; margin: 0 0 1.2rem 1rem; }
+  .miss-lede.partial { border-left-color: var(--partial); background: rgba(255,200,102,0.08); }
+  .miss-lede p { margin: 0 0 0.6rem; font-size: 0.87rem; line-height: 1.6; color: var(--body); }
+  .miss-lede p:last-child { margin: 0; }
+
+  .misses { display: grid; gap: 0.8rem; }
+  .miss { border: 1px solid var(--line); border-radius: 10px; padding: 0.9rem 1.1rem; background: rgba(255,255,255,0.03); }
+  .miss-head { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.7rem; }
+  .miss-head .case { font-family: "JetBrains Mono", monospace; font-size: 0.8rem; font-weight: 700; }
+  .miss-title { font-weight: 600; font-size: 0.88rem; flex: 1; min-width: 180px; }
+  .conf { font-size: 0.72rem; font-weight: 700; color: var(--wrong); background: rgba(255,139,139,0.12);
+    border-radius: 999px; padding: 0.12rem 0.5rem; white-space: nowrap; }
+  .conf.partial { color: var(--partial); background: rgba(255,200,102,0.12); }
+  .miss-body { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem; }
+  @media (max-width: 760px) { .miss-body { grid-template-columns: 1fr; gap: 0.7rem; } }
+  .side-label { display: block; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em;
+    font-weight: 700; color: var(--correct); margin-bottom: 0.2rem; }
+  .side-label.wrong-label { color: var(--wrong); }
+  .side-label.partial-label { color: var(--partial); }
+  .side-label.gap-label { color: var(--ink); }
+  .miss-gap { margin-top: 0.9rem; padding-top: 0.8rem; border-top: 1px dashed var(--line); }
+  .miss-gap p { margin: 0; font-size: 0.85rem; line-height: 1.6; color: var(--body); }
+  .side p { margin: 0; font-size: 0.85rem; line-height: 1.55; color: var(--body); }
+
+  .table-tools { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.9rem; flex-wrap: wrap; }
+  .table-tools input { flex: 1; min-width: 200px; border: 1px solid var(--line); border-radius: 7px;
+    padding: 0.45rem 0.65rem; font-family: inherit; font-size: 0.88rem;
+    background: var(--deep); color: var(--ink); }
+  .table-tools button { border: 1px solid var(--line); background: var(--deep); border-radius: 7px;
+    padding: 0.45rem 0.85rem; font-family: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; color: var(--muted); }
+  .table-tools button.on { background: rgba(255,157,66,0.12); color: var(--mint); border-color: rgba(255,157,66,0.35); }
+
+  td.case { font-family: "JetBrains Mono", monospace; font-size: 0.8rem; font-weight: 700; white-space: nowrap; color: var(--ink); }
+  td.what { line-height: 1.45; }
+  td.score-cell { width: 150px; }
+  .score { display: flex; align-items: center; gap: 0.5rem; }
+  .score-num { font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 0.82rem;
+    font-variant-numeric: tabular-nums; width: 2.6rem; color: var(--ink); }
+  .score-bar { flex: 1; height: 6px; background: #34291d; border-radius: 3px; overflow: hidden; }
+  .score-bar i { display: block; height: 100%; border-radius: 3px; }
+  .score-bar i.correct { background: var(--correct); }
+  .score-bar i.partial { background: var(--partial); }
+  .score-bar i.wrong { background: var(--wrong); }
+  .score-bar i.unscorable { background: #7d7266; }
+
+  .pill { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.72rem;
+    font-weight: 700; white-space: nowrap; }
+  .pill.correct { background: rgba(110,231,168,0.12); color: var(--correct); }
+  .pill.partial { background: rgba(255,200,102,0.12); color: var(--partial); }
+  .pill.wrong { background: rgba(255,139,139,0.12); color: var(--wrong); }
+  .pill.unscorable { background: rgba(255,255,255,0.06); color: var(--muted); }
+  .muted { color: var(--muted); }
+
+  .scroll { max-height: 640px; overflow-y: auto; border-radius: 8px; }
+  .scroll thead th { position: sticky; top: 0; z-index: 2; }
+
+  footer { color: var(--muted); font-size: 0.8rem; line-height: 1.6; border-top: 1px solid var(--line);
+    padding-top: 1.1rem; margin-top: 2rem; }
+  footer strong { color: var(--ink); }
+
+  @media (max-width: 900px) {
+    header.hero, main { padding-left: 1rem; padding-right: 1rem; }
+    header.hero { flex-direction: column; align-items: flex-start; }
+    .meta { text-align: left; }
+    .chart { gap: 1.25rem; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="brand">
+    <div class="logo"><svg id="LOGO" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 53.44 45"><defs><style>.cls-1{fill:#e8edf4;}.cls-2{fill:#7aff8a;}</style></defs><path class="cls-1" d="M0,36.87a.75.75,0,0,1,.84-.76h.38c.56,0,.72.2,1,.69l2.16,4.62L6.51,36.8c.23-.51.4-.69.93-.69H7.8a.76.76,0,0,1,.86.76v7.38c0,.42-.18.63-.61.63h-.2c-.41,0-.58-.21-.58-.63V37.89l-2,4.31a.84.84,0,0,1-.93.59.84.84,0,0,1-.94-.59l-2-4.27v6.32c0,.42-.17.63-.6.63H.57c-.4,0-.57-.21-.57-.63Z"/><path class="cls-1" d="M13.16,38.22a3,3,0,0,1,3.09,3.24v.11c0,.28-.09.39-.4.39H11.1a1.94,1.94,0,0,0,0,.24A2.09,2.09,0,0,0,13.29,44a2.12,2.12,0,0,0,2-1.07s.69.1.69.66a1.3,1.3,0,0,1-.71.94,3.85,3.85,0,0,1-2,.52,3.2,3.2,0,0,1-3.41-3.36A3.27,3.27,0,0,1,13.16,38.22Zm0,1a2.05,2.05,0,0,0-2,1.83H15A1.77,1.77,0,0,0,13.15,39.23Z"/><path class="cls-1" d="M30.16,43.4h0a4.66,4.66,0,0,0,1-2.9A4.25,4.25,0,0,0,26.79,36a4.3,4.3,0,0,0-4.41,4.53,4.39,4.39,0,0,0,6.89,3.71l.48.5a.59.59,0,0,0,.87.14l.09-.09a.62.62,0,0,0-.08-.89Zm-3.37.38a3,3,0,0,1-3-3.29,3,3,0,1,1,6,0,3.57,3.57,0,0,1-.53,2L27.9,41.12c-.24-.27-.57-.38-.83-.14l-.09.08a.61.61,0,0,0,.08.86l1.38,1.42A3.15,3.15,0,0,1,26.79,43.78Z"/><path class="cls-1" d="M37.69,38.32h-.15c-.33,0-.58.16-.58.64V42.7a1.92,1.92,0,0,1-1.76,1.13c-1,0-1.54-.65-1.54-1.76V39c0-.5-.25-.64-.59-.64h-.15c-.34,0-.58.16-.58.64v3.27c0,1.6.78,2.76,2.48,2.76A2.49,2.49,0,0,0,37,43.86v.38c0,.49.25.64.59.64h.15c.34,0,.58-.16.58-.64V39C38.28,38.46,38,38.32,37.69,38.32Z"/><path class="cls-1" d="M20.43,38.22a1.63,1.63,0,0,0-1.63,1.22V39c0-.5-.24-.64-.59-.64h-.15c-.33,0-.57.16-.57.64v5.29c0,.48.24.63.59.63h.14c.34,0,.59-.15.59-.63V42c0-1.49.42-2.51,1.46-2.51a1.26,1.26,0,0,1,.82.28s.4-.17.4-.68S21.1,38.22,20.43,38.22Z"/><path class="cls-1" d="M43.33,38.22a2.62,2.62,0,0,0-2.25,1.17V36.27c0-.5-.24-.65-.59-.65h-.15c-.34,0-.58.17-.58.65v8c0,.48.24.63.58.63h.15c.34,0,.58-.15.58-.63v-.39A2.49,2.49,0,0,0,43.29,45a3.1,3.1,0,0,0,3.06-3.4A3.07,3.07,0,0,0,43.33,38.22Zm-.28,5.68a1.93,1.93,0,0,1-2-1.81V40.66a2.05,2.05,0,0,1,2-1.34,2.07,2.07,0,0,1,2,2.29A2,2,0,0,1,43.05,43.9Z"/><path class="cls-1" d="M50.34,38.22a3,3,0,0,1,3.1,3.24v.11c0,.28-.1.39-.4.39H48.28a1,1,0,0,0,0,.24A2.08,2.08,0,0,0,50.48,44a2.12,2.12,0,0,0,2-1.07s.7.1.7.66a1.33,1.33,0,0,1-.71.94,3.89,3.89,0,0,1-2,.52,3.2,3.2,0,0,1-3.4-3.36A3.26,3.26,0,0,1,50.34,38.22Zm0,1a2.05,2.05,0,0,0-2,1.83h3.86A1.77,1.77,0,0,0,50.33,39.23Z"/><path class="cls-1" d="M38.6,5.77,27.35.15a1.4,1.4,0,0,0-1.26,0L14.87,5.76a1.41,1.41,0,0,0-.29.18A1.47,1.47,0,0,0,14.06,7h0V21.09a1.4,1.4,0,0,0,.78,1.26L26.09,28a1.4,1.4,0,0,0,1.26,0l2.88-1.45v3a1.41,1.41,0,0,0,2.82,0v-4.4l5.55-2.78a1.41,1.41,0,0,0,.77-1.26V7A1.42,1.42,0,0,0,38.6,5.77ZM30.23,23.39l-3.51,1.76-9.85-4.92V9.31L30.23,16Zm6.33-3.16L33.05,22V15.12a1.4,1.4,0,0,0-.78-1.26L18.61,7,26.72,3,36.56,7.9Z"/><path class="cls-2" d="M36.56,7.9V20.23L33.05,22V15.12a1.4,1.4,0,0,0-.78-1.26L18.61,7,26.72,3Z"/><polygon class="cls-2" points="30.23 15.99 30.23 23.39 26.72 25.15 16.88 20.23 16.88 9.31 30.23 15.99"/></svg></div>
+    <div>
+      <div class="badge">Platform Engineering &middot; Sherlock Evaluation</div>
+      <h1>Accuracy against real ticket resolutions</h1>
+      <p>15 August – 18 September 2026 &middot; every Sherlock root cause graded against what actually closed the ticket</p>
+    </div>
+  </div>
+  <div class="meta">
+    Generated <strong>18 Sep 2026</strong><br />
+    76 tickets investigated
+  </div>
+</header>
+
+<main>
+
+  <section class="kpis">
+    <div class="kpi hero-kpi">
+      <div class="label">Accuracy now</div>
+      <div class="value">88.2%</div>
+      <div class="sub">14 Sep – 18 Sep</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Improvement</div>
+      <div class="value" style="color:var(--correct)">+23.2pp</div>
+      <div class="sub">from 65.0% in the first window</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Tickets investigated</div>
+      <div class="value">76</div>
+      <div class="sub">real PES production tickets</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Average match quality</div>
+      <div class="value">87%</div>
+      <div class="sub">latest window, vs the real fix</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Graded blind</div>
+      <div class="value">26</div>
+      <div class="sub">34% of runs could not see the answer</div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Accuracy by 15-day window</h2>
+    <p class="sub-head">Share of tickets where Sherlock's root cause matched the engineer's actual fix.</p>
+    <div class="chart">
+      <div class="bar-col">
+          <div class="bar-value">65.0%</div>
+          
+          <div class="bar-track"><div class="bar-fill" style="height:73.7%"></div></div>
+          <div class="bar-label">15 Aug – 29 Aug</div>
+          <div class="bar-sub">20 tickets scored</div>
+        </div>
+<div class="bar-col">
+          <div class="bar-value">81.8%</div>
+          <div class="delta">+16.8pp</div>
+          <div class="bar-track"><div class="bar-fill" style="height:92.7%"></div></div>
+          <div class="bar-label">30 Aug – 13 Sep</div>
+          <div class="bar-sub">22 tickets scored</div>
+        </div>
+<div class="bar-col">
+          <div class="bar-value">88.2%</div>
+          <div class="delta">+6.4pp</div>
+          <div class="bar-track"><div class="bar-fill latest" style="height:100.0%"></div></div>
+          <div class="bar-label">14 Sep – 18 Sep</div>
+          <div class="bar-sub">34 tickets scored</div>
+        </div>
+    </div>
+    <table class="window-table">
+      <thead>
+        <tr>
+          <th>Window</th>
+          <th class="num">Tickets scored</th>
+          <th class="num">Correct</th>
+          <th class="num">Partial</th>
+          <th class="num">Wrong</th>
+          <th class="num">Accuracy</th>
+          <th class="num">Avg match</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="label">15 Aug – 29 Aug</td>
+          <td class="num">20</td>
+          <td class="num n-correct">13</td>
+          <td class="num n-partial">5</td>
+          <td class="num n-wrong">2</td>
+          <td class="num strong">65.0%</td>
+          <td class="num">77%</td>
+        </tr>
+<tr>
+          <td class="label">30 Aug – 13 Sep</td>
+          <td class="num">22</td>
+          <td class="num n-correct">18</td>
+          <td class="num n-partial">3</td>
+          <td class="num n-wrong">1</td>
+          <td class="num strong">81.8%</td>
+          <td class="num">84%</td>
+        </tr>
+<tr>
+          <td class="label">14 Sep – 18 Sep</td>
+          <td class="num">34</td>
+          <td class="num n-correct">30</td>
+          <td class="num n-partial">3</td>
+          <td class="num n-wrong">1</td>
+          <td class="num strong">88.2%</td>
+          <td class="num">87%</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="panel">
+    <h2>What changed</h2>
+    <p class="sub-head">How Sherlock investigates today, and why accuracy rose as the work got harder.</p>
+    <div class="drivers">
+      <div class="driver">
+      <div class="driver-n">1</div>
+      <h3>It now looks where an engineer looks</h3>
+      <div class="driver-metric">
+        <div class="from"><span class="v">Airflow only</span><span class="l">early investigations</span></div>
+        <div class="arrow">&rarr;</div>
+        <div class="to"><span class="v">The full picture</span><span class="l">how it works now</span></div>
+      </div>
+      <p>At the start Sherlock mostly read Airflow: did the DAG fail, what did the log say. That is one slice of a real ticket. It now follows the same trail a PE follows — index manifests, databases, prior tickets, Slack threads, and GitHub PRs — and checks them against each other instead of trusting a single log line.</p>
+    </div>
+<div class="driver">
+      <div class="driver-n">2</div>
+      <h3>It got better by doing more real work</h3>
+      <div class="driver-metric">
+        <div class="from"><span class="v">20</span><span class="l">tickets in 15 Aug – 29 Aug</span></div>
+        <div class="arrow">&rarr;</div>
+        <div class="to"><span class="v">34</span><span class="l">tickets in 14 Sep – 18 Sep</span></div>
+      </div>
+      <p>In plain terms: practice on live PES tickets. Across the period it investigated 76 of them, and the newest window is the largest. Every closed case was fed back in — prior tickets, write-ups, and playbooks — so the next run could reuse what already worked instead of starting from scratch. The later tickets were not the easy ones — vendor gaps, index config, reports, options pipelines. Accuracy rose while the pile got bigger and messier, not smaller and simpler.</p>
+    </div>
+<div class="driver">
+      <div class="driver-n">3</div>
+      <h3>Each case leaves a recipe for the next</h3>
+      <div class="driver-metric">
+        <div class="from"><span class="v">8</span><span class="l">playbooks on 15 Aug</span></div>
+        <div class="arrow">&rarr;</div>
+        <div class="to"><span class="v">74</span><span class="l">playbooks on 18 Sep</span></div>
+      </div>
+      <p>When a case closes, the failure class is written down so the next similar ticket does not start from zero. That is why more cases help: Sherlock can reuse what already worked, then spend its time on what is actually new. The later window was also graded harder — 26 of 34 runs could not see the ticket&#x27;s resolution comments, versus {first_blind} of {first_total} at the start — so the gain is not from reading the answer.</p>
+    </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Where it still gets it wrong</h2>
+    <p class="sub-head">4 of 76 scored
+      tickets got a different root cause than the engineer &mdash; 2 in 15 Aug – 29 Aug, 1 in 30 Aug – 13 Sep, 1 in 14 Sep – 18 Sep.</p>
+    <div class="miss-lede">
+      <p><strong>All four share one pattern:</strong> each was closed by a human fact that exists
+      nowhere in the logs or the code &mdash; the job actually succeeded, the data was fine and
+      someone overrode it, the ticket named the wrong report, a refresh was agreed in a side
+      thread. Sherlock is strong at diagnosing systems and weak at recognising when there is no
+      defect to diagnose.</p>
+      <p><strong>The common mistake is accepting the ticket at face value.</strong> In all four
+      it took the reported problem as true and moved straight to explaining it, instead of first
+      checking whether the job actually failed, whether the data was actually wrong, or whether
+      the object named in the ticket was the live one. The systems reasoning was usually sound;
+      the step it skipped was testing the premise.</p>
+      <p><strong>Every one was delivered at 90% confidence or higher.</strong> That is the part
+      worth fixing: a wrong answer stated confidently is harder for an engineer to catch than a
+      hedged one. Calibrating confidence, and letting Sherlock conclude &ldquo;nothing is
+      broken&rdquo;, is the next piece of work.</p>
+    </div>
+    <div class="misses">
+      <div class="miss">
+        <div class="miss-head">
+          <span class="case">PES-1165</span>
+          <span class="miss-title">please help to run the report</span>
+          <span class="conf wrong">stated 93% confident</span>
+        </div>
+        <div class="miss-body">
+          <div class="side">
+            <span class="side-label">What actually closed it</span>
+            <p>Nothing had failed. The report ran, the engineer confirmed delivery, and the requester replied “I got the report thanks”.</p>
+          </div>
+          <div class="side">
+            <span class="side-label wrong-label">What Sherlock said</span>
+            <p>Described a full-history load exhausting memory and the pod being killed around May 2020.</p>
+          </div>
+        </div>
+        <div class="miss-gap">
+          <span class="side-label gap-label">Where it went wrong</span>
+          <p>It saw a scheduling event on the way to a successful run and treated it as proof of a crash. It never checked the end state — did the job finish, did the mail go out — before building the explanation. Both answers were sitting in the ticket thread. Reading “help me run this” as “something is broken” is the error; a request for help is not an incident.</p>
+        </div>
+      </div><div class="miss">
+        <div class="miss-head">
+          <span class="case">PES-1120</span>
+          <span class="miss-title">2007 SI settlement prices wrong</span>
+          <span class="conf wrong">stated 91% confident</span>
+        </div>
+        <div class="miss-body">
+          <div class="side">
+            <span class="side-label">What actually closed it</span>
+            <p>Our prices were correct and matched Barchart. The requester preferred Bloomberg’s values and applied manual overrides.</p>
+          </div>
+          <div class="side">
+            <span class="side-label wrong-label">What Sherlock said</span>
+            <p>Went looking for a settlement-versus-close data defect, assuming something was broken.</p>
+          </div>
+        </div>
+        <div class="miss-gap">
+          <span class="side-label gap-label">Where it went wrong</span>
+          <p>The reporter said the prices were wrong, and Sherlock accepted that and went hunting for the cause. The engineer did the opposite: checked our numbers against an outside source first, found they matched, and closed it as a preference for Bloomberg. On a disputed-data ticket the first move is to verify the claim, not to explain it.</p>
+        </div>
+      </div><div class="miss">
+        <div class="miss-head">
+          <span class="case">PES-1144</span>
+          <span class="miss-title">DIA Fair Strike Calculation</span>
+          <span class="conf wrong">stated 90% confident</span>
+        </div>
+        <div class="miss-body">
+          <div class="side">
+            <span class="side-label">What actually closed it</span>
+            <p>Settled in conversation: the DIA seed dividends had been refreshed, so historical vol surfaces were wiped and backloaded from 2012.</p>
+          </div>
+          <div class="side">
+            <span class="side-label wrong-label">What Sherlock said</span>
+            <p>Blamed a delta-filter formula defect in the fair-strike calculation.</p>
+          </div>
+        </div>
+        <div class="miss-gap">
+          <span class="side-label gap-label">Where it went wrong</span>
+          <p>It found something odd in the calculation code and stopped there, without asking why the numbers changed when the formula had not. The cause was upstream data being regenerated, which a check on when the inputs were last rebuilt would have surfaced. This one is also a step backwards: an earlier run of the same ticket scored 90.</p>
+        </div>
+      </div><div class="miss">
+        <div class="miss-head">
+          <span class="case">PES-1142</span>
+          <span class="miss-title">Error while Updating the &quot;indicative_report_email&quot; Report</span>
+          <span class="conf wrong">stated 97% confident</span>
+        </div>
+        <div class="miss-body">
+          <div class="side">
+            <span class="side-label">What actually closed it</span>
+            <p>The ticket quoted a report that had been paused since 2022. The live report was a different one, and its recipients were simply updated.</p>
+          </div>
+          <div class="side">
+            <span class="side-label wrong-label">What Sherlock said</span>
+            <p>Diagnosed a schema validation failure — sound reasoning, but about the wrong report.</p>
+          </div>
+        </div>
+        <div class="miss-gap">
+          <span class="side-label gap-label">Where it went wrong</span>
+          <p>The analysis itself was correct; it was performed on the wrong object. Sherlock took the ID in the ticket as fact and never asked whether that report was the one in use. The evidence was there — paused since 2022, no recent runs — and would have redirected the whole investigation. It validated the artifact it was handed instead of the premise behind it.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Where it was close</h2>
+    <p class="sub-head">11 of 76 scored
+      tickets were in the right area but not the mechanism that closed the ticket &mdash; 5 in 15 Aug – 29 Aug, 3 in 30 Aug – 13 Sep, 3 in 14 Sep – 18 Sep.</p>
+    <div class="miss-lede partial">
+      <p><strong>These are not invented defects.</strong> Sherlock named the right system and often
+      the right failure class. What it missed is the last step: the specific bug, the fix that
+      actually shipped, or a process decision (wait, switch vendor, point at the other region).</p>
+      <p><strong>Confidence is still high &mdash; 86% to 97%.</strong> Same problem as the wrong
+      calls, in a milder form: a near-miss delivered as a finished diagnosis. The next piece of
+      work is to separate &ldquo;right neighborhood&rdquo; from &ldquo;this is the close&rdquo;.</p>
+    </div>
+    <div class="misses">
+      <div class="miss">
+        <div class="miss-head">
+          <span class="case">PES-1147</span>
+          <span class="miss-title">Ingest Equity EOD data from EDI for TWSE</span>
+          <span class="conf partial">stated 94% confident</span>
+        </div>
+        <div class="miss-body">
+          <div class="side">
+            <span class="side-label">What actually closed it</span>
+            <p>The team stayed on LSEG, then moved to ICE. No new TWSE EOD pipeline was built.</p>
+          </div>
+          <div class="side">
+            <span class="side-label partial-label">What Sherlock said</span>
+            <p>Right that TWSE EOD is not a missing platform capability — it framed the rest as a licensing question rather than the vendor decision that closed it.</p>
+          </div>
+        </div>
+        
+      </div><div class="miss">
+        <div class="miss-head">
+          <span class="case">PES-1082</span>
+          <span class="miss-title">Exchanges usage - Euronext</span>
+          <span class="conf partial">stated 88% confident</span>
+        </div>
+        <div class="miss-body">
+          <div class="side">
+            <span class="side-label">What actually closed it</span>
+            <p>The Euronext counts were false hits from multi-listed securities, not real Amsterdam/Paris usage.</p>
+          </div>
+          <div class="side">
+            <span class="side-label partial-label">What Sherlock said</span>
+            <p>Took the Dependency Tracker counts at face value and explained them as genuine Euronext exposure.</p>
+          </div>
+        </div>
+        
+      </div><div class="miss">
+        <div class="miss-head">
+          <span class="case">PES-1125</span>
+          <span class="miss-title">2026-08-20: Airlow is not ok</span>
+          <span class="conf partial">stated 90% confident</span>
+        </div>
+        <div class="miss-body">
+          <div class="side">
+            <span class="side-label">What actually closed it</span>
+            <p>Closed by an infrastructure change (ENG-3128 / PR #764), not by waiting out the queue.</p>
+          </div>
+          <div class="side">
+            <span class="side-label partial-label">What Sherlock said</span>
+            <p>Right that this was Airflow congestion, not an outage — but the story it told was queue age, not the fix that shipped.</p>
+          </div>
+        </div>
+        
+      </div><div class="miss">
+        <div class="miss-head">
+          <span class="case">PES-1166</span>
+          <span class="miss-title">Missing Refinitiv SPX indicative option quotes for 2026-09-01 causing BOFA_DISPERSION failure</span>
+          <span class="conf partial">stated 94% confident</span>
+        </div>
+        <div class="miss-body">
+          <div class="side">
+            <span class="side-label">What actually closed it</span>
+            <p>A quality-gate bug (AND vs OR in ENG-2841) let empty quotes through. Vendor FIDs were not the close.</p>
+          </div>
+          <div class="side">
+            <span class="side-label partial-label">What Sherlock said</span>
+            <p>Right Indicative-SPX / quote-date chain, but blamed empty vendor fields instead of the gate.</p>
+          </div>
+        </div>
+        
+      </div><div class="miss">
+        <div class="miss-head">
+          <span class="case">PES-1211</span>
+          <span class="miss-title">[devops] etlapi (+ probably others) build broken due to expired base Docker image</span>
+          <span class="conf partial">stated 92% confident</span>
+        </div>
+        <div class="miss-body">
+          <div class="side">
+            <span class="side-label">What actually closed it</span>
+            <p>Debian bullseye’s apt metadata had expired. The durable fix is moving the image to 3.11-trixie.</p>
+          </div>
+          <div class="side">
+            <span class="side-label partial-label">What Sherlock said</span>
+            <p>Right that etlapi’s Docker build was dying on apt — named stale metadata, not the image roll.</p>
+          </div>
+        </div>
+        
+      </div><div class="miss">
+        <div class="miss-head">
+          <span class="case">PES-1074</span>
+          <span class="miss-title">Indices using Exchange data</span>
+          <span class="conf partial">stated 88% confident</span>
+        </div>
+        <div class="miss-body">
+          <div class="side">
+            <span class="side-label">What actually closed it</span>
+            <p>Dependency Tracker was missing the MQB* index family, so the usage report was incomplete.</p>
+          </div>
+          <div class="side">
+            <span class="side-label partial-label">What Sherlock said</span>
+            <p>Correctly pointed at messy exchange/MIC lineage, but treated it as a reporting-hazard rather than the missing-family gap that actually closed the ticket.</p>
+          </div>
+        </div>
+        
+      </div><div class="miss">
+        <div class="miss-head">
+          <span class="case">PES-1146</span>
+          <span class="miss-title">GC Vol Advantage failed over the rebalance window and today is a rebalance day for GC</span>
+          <span class="conf partial">stated 92% confident</span>
+        </div>
+        <div class="miss-body">
+          <div class="side">
+            <span class="side-label">What actually closed it</span>
+            <p>The east feed was bad and west was good. Recovery pointed the view at west — nobody copied rows.</p>
+          </div>
+          <div class="side">
+            <span class="side-label partial-label">What Sherlock said</span>
+            <p>Right east-bad / west-good class, but the recovery it described was copying data, not switching the view.</p>
+          </div>
+        </div>
+        
+      </div><div class="miss">
+        <div class="miss-head">
+          <span class="case">PES-1162</span>
+          <span class="miss-title">2026-09-01: Standard reports erroring because of missing rebalance</span>
+          <span class="conf partial">stated 97% confident</span>
+        </div>
+        <div class="miss-body">
+          <div class="side">
+            <span class="side-label">What actually closed it</span>
+            <p>The 1 Sep portfolio was delayed until market-cap selection finished. The team waited; it appeared.</p>
+          </div>
+          <div class="side">
+            <span class="side-label partial-label">What Sherlock said</span>
+            <p>Saw the missing portfolio, then blamed the report that flagged it as the root defect.</p>
+          </div>
+        </div>
+        
+      </div><div class="miss">
+        <div class="miss-head">
+          <span class="case">PES-949</span>
+          <span class="miss-title">Correction of multiple documents for single key on website</span>
+          <span class="conf partial">stated 93% confident</span>
+        </div>
+        <div class="miss-body">
+          <div class="side">
+            <span class="side-label">What actually closed it</span>
+            <p>Closed by deleting the duplicate document keys from the IPT spreadsheet / manifest.</p>
+          </div>
+          <div class="side">
+            <span class="side-label partial-label">What Sherlock said</span>
+            <p>Right that document types had no canonical keys and duplicates had piled up — not how it was cleaned up.</p>
+          </div>
+        </div>
+        
+      </div><div class="miss">
+        <div class="miss-head">
+          <span class="case">PES-1135</span>
+          <span class="miss-title">2026-08-24: adminUI error when editing reports</span>
+          <span class="conf partial">stated 86% confident</span>
+        </div>
+        <div class="miss-body">
+          <div class="side">
+            <span class="side-label">What actually closed it</span>
+            <p>Edit was looking up the wrong report: a UUID fallback plus a duplicate row, so the form opened empty.</p>
+          </div>
+          <div class="side">
+            <span class="side-label partial-label">What Sherlock said</span>
+            <p>Right that Admin UI Standard Levels failed schema validation — missed the lookup bug underneath.</p>
+          </div>
+        </div>
+        
+      </div><div class="miss">
+        <div class="miss-head">
+          <span class="case">PES-1143</span>
+          <span class="miss-title">MQLUXA5N not getting calculated for 25th Aug - Urgent</span>
+          <span class="conf partial">stated 92% confident</span>
+        </div>
+        <div class="miss-body">
+          <div class="side">
+            <span class="side-label">What actually closed it</span>
+            <p>A targeted SecAPI post restored the missing return. The restater was not what unblocked it.</p>
+          </div>
+          <div class="side">
+            <span class="side-label partial-label">What Sherlock said</span>
+            <p>Same SIGTERM-after-IDS cause as a prior ticket, but recommended restarting the index instead of posting the missing metric.</p>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Every ticket Sherlock investigated</h2>
+    <p class="sub-head">Match score is how closely Sherlock's root cause matched the engineer's actual resolution.</p>
+    <div class="table-tools">
+      <input id="search" type="search" placeholder="Search ticket or description&hellip;" />
+      <button data-filter="all" class="on">All (76)</button>
+      <button data-filter="correct">Correct</button>
+      <button data-filter="partial">Partial</button>
+      <button data-filter="wrong">Wrong</button>
+    </div>
+    <div class="scroll">
+      <table id="cases">
+        <thead>
+          <tr>
+            <th>Ticket</th>
+            <th>What it was about</th>
+            <th>Match</th>
+            <th>Verdict</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-verdict="correct">
+          <td class="case">PES-1200</td>
+          <td class="what">BEFSCB91 · Index Run Data Not Saved to DC · Reported on: 10th-Sept-2026</td>
+          <td class="score-cell"><div class="score"><span class="score-num">98%</span><span class="score-bar"><i class="correct" style="width:98%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-991</td>
+          <td class="what">trirt-real-time-values-price-check DAG failure</td>
+          <td class="score-cell"><div class="score"><span class="score-num">98%</span><span class="score-bar"><i class="correct" style="width:98%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1138</td>
+          <td class="what">dissapi_barclays_portfolio_status_custom_report_test is failing · Reported on 25th-Aug-2026</td>
+          <td class="score-cell"><div class="score"><span class="score-num">97%</span><span class="score-bar"><i class="correct" style="width:97%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1155</td>
+          <td class="what">Investigation of ALSIU26 price for 2026-08-27 · Reported on 31st-Aug-2026</td>
+          <td class="score-cell"><div class="score"><span class="score-num">97%</span><span class="score-bar"><i class="correct" style="width:97%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1159</td>
+          <td class="what">CSCUD66E</td>
+          <td class="score-cell"><div class="score"><span class="score-num">97%</span><span class="score-bar"><i class="correct" style="width:97%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1186</td>
+          <td class="what">deadline-checker not recognizing CLOSE as a valid event_operation · Reported on 5th-September-2026</td>
+          <td class="score-cell"><div class="score"><span class="score-num">97%</span><span class="score-bar"><i class="correct" style="width:97%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1129</td>
+          <td class="what">load_intraday_prices failed for load_eod_prices_from_realtime · Reported on 22nd-Aug-2026</td>
+          <td class="score-cell"><div class="score"><span class="score-num">96%</span><span class="score-bar"><i class="correct" style="width:96%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1149</td>
+          <td class="what">Disable the cme-real-time-staging pipeline</td>
+          <td class="score-cell"><div class="score"><span class="score-num">96%</span><span class="score-bar"><i class="correct" style="width:96%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1171</td>
+          <td class="what">2026-09-02: Bcom data not in today</td>
+          <td class="score-cell"><div class="score"><span class="score-num">96%</span><span class="score-bar"><i class="correct" style="width:96%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1196</td>
+          <td class="what">Delayed Rebalance Date Mismatch Causing IDS Save Failures</td>
+          <td class="score-cell"><div class="score"><span class="score-num">96%</span><span class="score-bar"><i class="correct" style="width:96%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1222</td>
+          <td class="what">2026-09-15: reuters_daily_prices_loader failed</td>
+          <td class="score-cell"><div class="score"><span class="score-num">96%</span><span class="score-bar"><i class="correct" style="width:96%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-743</td>
+          <td class="what">adjusting impact cube indices to not fail eod calculations and delay selection similar to what happens…</td>
+          <td class="score-cell"><div class="score"><span class="score-num">96%</span><span class="score-bar"><i class="correct" style="width:96%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1117</td>
+          <td class="what">J6 Weeklies option price mismatch - check reingestion/failed run</td>
+          <td class="score-cell"><div class="score"><span class="score-num">95%</span><span class="score-bar"><i class="correct" style="width:95%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1164</td>
+          <td class="what">*Clear streamlit cache, UBS AMC Key updated*</td>
+          <td class="score-cell"><div class="score"><span class="score-num">95%</span><span class="score-bar"><i class="correct" style="width:95%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1167</td>
+          <td class="what">PY560 HSBC TPPA · Bloomberg delivered PY560.csv.20260831 but DataAPI LnB calendar skipped ingestion…</td>
+          <td class="score-cell"><div class="score"><span class="score-num">95%</span><span class="score-bar"><i class="correct" style="width:95%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1168</td>
+          <td class="what">Citi · Composition Upload Failing Due to Unexpected created_ts Field in target_portfolio Response</td>
+          <td class="score-cell"><div class="score"><span class="score-num">95%</span><span class="score-bar"><i class="correct" style="width:95%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1187</td>
+          <td class="what">QSP_intraday_portfolio_status report failing</td>
+          <td class="score-cell"><div class="score"><span class="score-num">95%</span><span class="score-bar"><i class="correct" style="width:95%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1188</td>
+          <td class="what">Expiry Date conflicts as of: yyyymmdd, mail is not genereating since 3rd spetember</td>
+          <td class="score-cell"><div class="score"><span class="score-num">95%</span><span class="score-bar"><i class="correct" style="width:95%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1197</td>
+          <td class="what">Hi, could you check on this report request from the client for *BXIIRDS6*? Currently, the report file…</td>
+          <td class="score-cell"><div class="score"><span class="score-num">95%</span><span class="score-bar"><i class="correct" style="width:95%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1214</td>
+          <td class="what">Fairstrikes Pipeline EAST and WEST (GC) firing even though DAG seem running fine.</td>
+          <td class="score-cell"><div class="score"><span class="score-num">95%</span><span class="score-bar"><i class="correct" style="width:95%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1124</td>
+          <td class="what">2026-08-20: Check BBG publishing</td>
+          <td class="score-cell"><div class="score"><span class="score-num">94%</span><span class="score-bar"><i class="correct" style="width:94%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1126</td>
+          <td class="what">2026-08-20: (api=indexapi, env=PRODUCTION): : ***** is marked prod</td>
+          <td class="score-cell"><div class="score"><span class="score-num">94%</span><span class="score-bar"><i class="correct" style="width:94%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1141</td>
+          <td class="what">Report names not visible on Admin UI · Reported on 26th-Aug-2026</td>
+          <td class="score-cell"><div class="score"><span class="score-num">94%</span><span class="score-bar"><i class="correct" style="width:94%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1145</td>
+          <td class="what">ivol_mdb_historical_loader dag is failing · Reported on 27th-Aug-2026</td>
+          <td class="score-cell"><div class="score"><span class="score-num">94%</span><span class="score-bar"><i class="correct" style="width:94%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1184</td>
+          <td class="what">DCMQT – Missing float market-cap data for F4V79W-S · Reported: 04-September-2026</td>
+          <td class="score-cell"><div class="score"><span class="score-num">94%</span><span class="score-bar"><i class="correct" style="width:94%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1085</td>
+          <td class="what">2026-08-13: Tick presence rate check failed alerts</td>
+          <td class="score-cell"><div class="score"><span class="score-num">93%</span><span class="score-bar"><i class="correct" style="width:93%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1128</td>
+          <td class="what">2026-08-21: MQAUTOCG not publishing a price</td>
+          <td class="score-cell"><div class="score"><span class="score-num">93%</span><span class="score-bar"><i class="correct" style="width:93%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1160</td>
+          <td class="what">Retrieve ICE Consolidated History Trial Data</td>
+          <td class="score-cell"><div class="score"><span class="score-num">93%</span><span class="score-bar"><i class="correct" style="width:93%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1185</td>
+          <td class="what">Delay in Replica 1 vs Replica 2 for MQAUTOCG price_return data</td>
+          <td class="score-cell"><div class="score"><span class="score-num">93%</span><span class="score-bar"><i class="correct" style="width:93%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1204</td>
+          <td class="what">Chaing the option chain for LVMH</td>
+          <td class="score-cell"><div class="score"><span class="score-num">93%</span><span class="score-bar"><i class="correct" style="width:93%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1213</td>
+          <td class="what">IceRawToBronzeLoss: ICE · messages going missing between raw and bronze (prod)</td>
+          <td class="score-cell"><div class="score"><span class="score-num">93%</span><span class="score-bar"><i class="correct" style="width:93%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-516</td>
+          <td class="what">LSEG · Indices not posting data since May/Aug 2025 · Reported: 17-April-2026</td>
+          <td class="score-cell"><div class="score"><span class="score-num">93%</span><span class="score-bar"><i class="correct" style="width:93%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1169</td>
+          <td class="what">Enable ES Options on Futures CME contracts on DSP (legacy platform) for Hilbert INFINT AMC</td>
+          <td class="score-cell"><div class="score"><span class="score-num">92%</span><span class="score-bar"><i class="correct" style="width:92%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1173</td>
+          <td class="what">Deleted smoke test — no Jira ticket to compare against</td>
+          <td class="score-cell"><div class="score"><span class="score-num">92%</span><span class="score-bar"><i class="correct" style="width:92%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1203</td>
+          <td class="what">Backload XQC Data to Secapi</td>
+          <td class="score-cell"><div class="score"><span class="score-num">92%</span><span class="score-bar"><i class="correct" style="width:92%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-943</td>
+          <td class="what">Create a block on bulk dissemination for full history for more than 5 indices and enabling date range</td>
+          <td class="score-cell"><div class="score"><span class="score-num">92%</span><span class="score-bar"><i class="correct" style="width:92%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1137</td>
+          <td class="what">We need to remove a target portfolio for INIFIT01 (UUID: a9f350e7-d769-4df2-b3d2-7d33c1dd1320).…</td>
+          <td class="score-cell"><div class="score"><span class="score-num">91%</span><span class="score-bar"><i class="correct" style="width:91%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1156</td>
+          <td class="what">MGXT100 Report Failure · Reported on: 1st-Sep-2026</td>
+          <td class="score-cell"><div class="score"><span class="score-num">91%</span><span class="score-bar"><i class="correct" style="width:91%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1172</td>
+          <td class="what">Deleted smoke test — no Jira ticket to compare against</td>
+          <td class="score-cell"><div class="score"><span class="score-num">91%</span><span class="score-bar"><i class="correct" style="width:91%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1206</td>
+          <td class="what">Update entries in mapping.dividend_schedules</td>
+          <td class="score-cell"><div class="score"><span class="score-num">91%</span><span class="score-bar"><i class="correct" style="width:91%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1111</td>
+          <td class="what">2026-08-19: Deadline checker - Check not in UI or Maninfest</td>
+          <td class="score-cell"><div class="score"><span class="score-num">90%</span><span class="score-bar"><i class="correct" style="width:90%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1161</td>
+          <td class="what">XLON - London Exchange usage</td>
+          <td class="score-cell"><div class="score"><span class="score-num">90%</span><span class="score-bar"><i class="correct" style="width:90%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1179</td>
+          <td class="what">Nasdaq Nordics derivatives data usage</td>
+          <td class="score-cell"><div class="score"><span class="score-num">90%</span><span class="score-bar"><i class="correct" style="width:90%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1194</td>
+          <td class="what">Missing option prices – GLD10B &amp; GLD20B · Reported: 09-September-2026</td>
+          <td class="score-cell"><div class="score"><span class="score-num">90%</span><span class="score-bar"><i class="correct" style="width:90%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1210</td>
+          <td class="what">Updates to `mapping.dividend_schedules`</td>
+          <td class="score-cell"><div class="score"><span class="score-num">90%</span><span class="score-bar"><i class="correct" style="width:90%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1221</td>
+          <td class="what">Help Generating Restatement Report for MQBER1T</td>
+          <td class="score-cell"><div class="score"><span class="score-num">90%</span><span class="score-bar"><i class="correct" style="width:90%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1107</td>
+          <td class="what">2026-08-18: ContainerOOMKilled: Container OOMKilled…</td>
+          <td class="score-cell"><div class="score"><span class="score-num">88%</span><span class="score-bar"><i class="correct" style="width:88%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1121</td>
+          <td class="what">Loading Glencore and Gunvor Scores to SecApi</td>
+          <td class="score-cell"><div class="score"><span class="score-num">88%</span><span class="score-bar"><i class="correct" style="width:88%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1127</td>
+          <td class="what">active people who can access the namespace</td>
+          <td class="score-cell"><div class="score"><span class="score-num">88%</span><span class="score-bar"><i class="correct" style="width:88%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1148</td>
+          <td class="what">2026-08-26: SFTP error for UBS endpoints</td>
+          <td class="score-cell"><div class="score"><span class="score-num">88%</span><span class="score-bar"><i class="correct" style="width:88%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1170</td>
+          <td class="what">Investigate Unexpected Deletion of BXIIRDRB `input_calc` and `intermediate` DCs</td>
+          <td class="score-cell"><div class="score"><span class="score-num">88%</span><span class="score-bar"><i class="correct" style="width:88%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1195</td>
+          <td class="what">edi_corax.all events not flowing in merq_corp_actions for IT listings</td>
+          <td class="score-cell"><div class="score"><span class="score-num">88%</span><span class="score-bar"><i class="correct" style="width:88%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1198</td>
+          <td class="what">Permissions to read access to dsp_options tables in the reuters schema in ivol_mdb</td>
+          <td class="score-cell"><div class="score"><span class="score-num">88%</span><span class="score-bar"><i class="correct" style="width:88%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1215</td>
+          <td class="what">2026-09-14: IceRawToBronzeLoss late/missing</td>
+          <td class="score-cell"><div class="score"><span class="score-num">88%</span><span class="score-bar"><i class="correct" style="width:88%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1112</td>
+          <td class="what">2026-08-19: Deadline checker log errorrs</td>
+          <td class="score-cell"><div class="score"><span class="score-num">87%</span><span class="score-bar"><i class="correct" style="width:87%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1183</td>
+          <td class="what">Usage across exchanges</td>
+          <td class="score-cell"><div class="score"><span class="score-num">86%</span><span class="score-bar"><i class="correct" style="width:86%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1217</td>
+          <td class="what">2026-09-14: Freezer missing for RWBPQY-S, MQBER6T and MQBER6P</td>
+          <td class="score-cell"><div class="score"><span class="score-num">86%</span><span class="score-bar"><i class="correct" style="width:86%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1133</td>
+          <td class="what">DSP Options DB Permissions Grant</td>
+          <td class="score-cell"><div class="score"><span class="score-num">84%</span><span class="score-bar"><i class="correct" style="width:84%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1109</td>
+          <td class="what">need help to refresh data for the fsym from the mapping.reuters_corp_actions_override</td>
+          <td class="score-cell"><div class="score"><span class="score-num">82%</span><span class="score-bar"><i class="correct" style="width:82%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1122</td>
+          <td class="what">RTIndex MQAUTOQG unhandled exception</td>
+          <td class="score-cell"><div class="score"><span class="score-num">82%</span><span class="score-bar"><i class="correct" style="width:82%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="correct">
+          <td class="case">PES-1174</td>
+          <td class="what">2026-09-02: Missing OIS data</td>
+          <td class="score-cell"><div class="score"><span class="score-num">82%</span><span class="score-bar"><i class="correct" style="width:82%"></i></span></div></td>
+          <td><span class="pill correct">Correct</span></td>
+        </tr>
+<tr data-verdict="partial">
+          <td class="case">PES-1143</td>
+          <td class="what">MQLUXA5N not getting calculated for 25th Aug - Urgent</td>
+          <td class="score-cell"><div class="score"><span class="score-num">74%</span><span class="score-bar"><i class="partial" style="width:74%"></i></span></div></td>
+          <td><span class="pill partial">Partial</span></td>
+        </tr>
+<tr data-verdict="partial">
+          <td class="case">PES-1135</td>
+          <td class="what">2026-08-24: adminUI error when editing reports</td>
+          <td class="score-cell"><div class="score"><span class="score-num">70%</span><span class="score-bar"><i class="partial" style="width:70%"></i></span></div></td>
+          <td><span class="pill partial">Partial</span></td>
+        </tr>
+<tr data-verdict="partial">
+          <td class="case">PES-1162</td>
+          <td class="what">2026-09-01: Standard reports erroring because of missing rebalance</td>
+          <td class="score-cell"><div class="score"><span class="score-num">68%</span><span class="score-bar"><i class="partial" style="width:68%"></i></span></div></td>
+          <td><span class="pill partial">Partial</span></td>
+        </tr>
+<tr data-verdict="partial">
+          <td class="case">PES-949</td>
+          <td class="what">Correction of multiple documents for single key on website</td>
+          <td class="score-cell"><div class="score"><span class="score-num">68%</span><span class="score-bar"><i class="partial" style="width:68%"></i></span></div></td>
+          <td><span class="pill partial">Partial</span></td>
+        </tr>
+<tr data-verdict="partial">
+          <td class="case">PES-1146</td>
+          <td class="what">GC Vol Advantage failed over the rebalance window and today is a rebalance day for GC</td>
+          <td class="score-cell"><div class="score"><span class="score-num">64%</span><span class="score-bar"><i class="partial" style="width:64%"></i></span></div></td>
+          <td><span class="pill partial">Partial</span></td>
+        </tr>
+<tr data-verdict="partial">
+          <td class="case">PES-1074</td>
+          <td class="what">Indices using Exchange data</td>
+          <td class="score-cell"><div class="score"><span class="score-num">58%</span><span class="score-bar"><i class="partial" style="width:58%"></i></span></div></td>
+          <td><span class="pill partial">Partial</span></td>
+        </tr>
+<tr data-verdict="partial">
+          <td class="case">PES-1211</td>
+          <td class="what">[devops] etlapi (+ probably others) build broken due to expired base Docker image</td>
+          <td class="score-cell"><div class="score"><span class="score-num">58%</span><span class="score-bar"><i class="partial" style="width:58%"></i></span></div></td>
+          <td><span class="pill partial">Partial</span></td>
+        </tr>
+<tr data-verdict="partial">
+          <td class="case">PES-1125</td>
+          <td class="what">2026-08-20: Airlow is not ok</td>
+          <td class="score-cell"><div class="score"><span class="score-num">52%</span><span class="score-bar"><i class="partial" style="width:52%"></i></span></div></td>
+          <td><span class="pill partial">Partial</span></td>
+        </tr>
+<tr data-verdict="partial">
+          <td class="case">PES-1166</td>
+          <td class="what">Missing Refinitiv SPX indicative option quotes for 2026-09-01 causing BOFA_DISPERSION failure</td>
+          <td class="score-cell"><div class="score"><span class="score-num">52%</span><span class="score-bar"><i class="partial" style="width:52%"></i></span></div></td>
+          <td><span class="pill partial">Partial</span></td>
+        </tr>
+<tr data-verdict="partial">
+          <td class="case">PES-1082</td>
+          <td class="what">Exchanges usage - Euronext</td>
+          <td class="score-cell"><div class="score"><span class="score-num">48%</span><span class="score-bar"><i class="partial" style="width:48%"></i></span></div></td>
+          <td><span class="pill partial">Partial</span></td>
+        </tr>
+<tr data-verdict="partial">
+          <td class="case">PES-1147</td>
+          <td class="what">Ingest Equity EOD data from EDI for TWSE</td>
+          <td class="score-cell"><div class="score"><span class="score-num">48%</span><span class="score-bar"><i class="partial" style="width:48%"></i></span></div></td>
+          <td><span class="pill partial">Partial</span></td>
+        </tr>
+<tr data-verdict="wrong">
+          <td class="case">PES-1142</td>
+          <td class="what">Error while Updating the &quot;indicative_report_email&quot; Report</td>
+          <td class="score-cell"><div class="score"><span class="score-num">28%</span><span class="score-bar"><i class="wrong" style="width:28%"></i></span></div></td>
+          <td><span class="pill wrong">Wrong</span></td>
+        </tr>
+<tr data-verdict="wrong">
+          <td class="case">PES-1120</td>
+          <td class="what">2007 SI settlement prices wrong</td>
+          <td class="score-cell"><div class="score"><span class="score-num">22%</span><span class="score-bar"><i class="wrong" style="width:22%"></i></span></div></td>
+          <td><span class="pill wrong">Wrong</span></td>
+        </tr>
+<tr data-verdict="wrong">
+          <td class="case">PES-1144</td>
+          <td class="what">DIA Fair Strike Calculation</td>
+          <td class="score-cell"><div class="score"><span class="score-num">22%</span><span class="score-bar"><i class="wrong" style="width:22%"></i></span></div></td>
+          <td><span class="pill wrong">Wrong</span></td>
+        </tr>
+<tr data-verdict="wrong">
+          <td class="case">PES-1165</td>
+          <td class="what">please help to run the report</td>
+          <td class="score-cell"><div class="score"><span class="score-num">15%</span><span class="score-bar"><i class="wrong" style="width:15%"></i></span></div></td>
+          <td><span class="pill wrong">Wrong</span></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <strong>How this is scored.</strong> Sherlock's stated root cause is compared against the engineer comments and
+    resolution that actually closed each Jira ticket. <strong>Correct</strong> means the same mechanism;
+    <strong>partial</strong> means the right area but an incomplete cause; <strong>wrong</strong> means a different
+    mechanism. Tickets with no engineer diagnosis on record are omitted from this page.
+    Windows are keyed to the date Sherlock ran, so each bar reflects the build that was live at the time.
+    <br /><br />
+    <strong>What this does not claim.</strong> Each window holds 20–34 scored tickets, so treat the individual
+    percentages as directional rather than precise. Ticket counts, playbooks, and blind runs are measured.
+    How Sherlock investigates (Airflow, then manifests, databases, Slack, GitHub, prior cases) is how
+    the current runs are wired, not a controlled experiment.
+  </footer>
+
+</main>
+
+<script>
+  const searchBox = document.getElementById('search');
+  const rows = Array.from(document.querySelectorAll('#cases tbody tr'));
+  const buttons = Array.from(document.querySelectorAll('.table-tools button'));
+  let activeFilter = 'all';
+
+  function applyFilters() {
+    const term = searchBox.value.trim().toLowerCase();
+    rows.forEach(row => {
+      const matchesFilter = activeFilter === 'all' || row.dataset.verdict === activeFilter;
+      const matchesTerm = !term || row.textContent.toLowerCase().includes(term);
+      row.style.display = matchesFilter && matchesTerm ? '' : 'none';
+    });
+  }
+
+  searchBox.addEventListener('input', applyFilters);
+  buttons.forEach(button => button.addEventListener('click', () => {
+    buttons.forEach(b => b.classList.toggle('on', b === button));
+    activeFilter = button.dataset.filter;
+    applyFilters();
+  }));
+</script>
+
+</body>
+</html>

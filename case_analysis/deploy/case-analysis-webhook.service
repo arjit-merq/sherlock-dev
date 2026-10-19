@@ -1,0 +1,19 @@
+[Unit]
+Description=MerQube case_analysis Jira webhook (investigate + close)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Override User= and WorkingDirectory= on the box.
+User=ubuntu
+WorkingDirectory=/opt/merq/Dev
+EnvironmentFile=-/opt/merq/Dev/case_analysis/.env
+Environment=PATH=/home/ubuntu/.local/bin:/usr/bin:/bin
+ExecStart=/usr/bin/python3 /opt/merq/Dev/case_analysis/scripts/webhook_server.py
+Restart=on-failure
+RestartSec=5
+# Logs: journalctl -u case-analysis-webhook
+
+[Install]
+WantedBy=multi-user.target

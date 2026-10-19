@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MerQube &mdash; Case analysis: Sherlock vs actual</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #f6efe3; --deep: #100c08; --mint: #ff9d42; --mint-dim: #d9822f; --paper: #14100b;
+    --card: #211a13; --line: #43362590; --muted: #ab9a80; --body: #d9cab3;
+    --broad: #55d3c4; --reuse: #c39bf5; --code: #8fd694; --serif: "Fraunces", Georgia, serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: "DM Sans", system-ui, sans-serif;
+    background: radial-gradient(1200px 500px at 10% -10%, rgba(255,157,66,0.12), transparent 60%),
+      radial-gradient(900px 400px at 100% 0%, rgba(85,211,196,0.09), transparent 55%), var(--paper);
+    color: var(--ink);
+  }
+
+  h1, h2 { font-family: var(--serif); }
+
+  header.hero {
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 1.5rem;
+    padding: 2rem 2.5rem 1.25rem; border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, #1c1611 0%, rgba(20,16,11,0.85) 100%);
+  }
+  .brand { display: flex; align-items: center; gap: 1rem; }
+  .brand .logo { width: 64px; height: 54px; flex-shrink: 0; }
+  .brand h1 { margin: 0; font-size: 1.55rem; font-weight: 700; letter-spacing: -0.02em; }
+  .brand p { margin: 0.25rem 0 0; color: var(--muted); font-size: 0.95rem; max-width: 46rem; }
+  .badge {
+    display: inline-block; background: var(--deep); color: var(--mint); padding: 0.2rem 0.55rem;
+    border-radius: 4px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+    border: 1px solid var(--line);
+  }
+  .meta { text-align: right; color: var(--muted); font-size: 0.85rem; line-height: 1.7; white-space: nowrap; }
+  .meta strong { color: var(--ink); }
+
+  main { padding: 1.75rem 2.5rem 3rem; max-width: 1500px; }
+
+  section { margin-bottom: 2rem; }
+  .terms { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem; margin-bottom: 1.4rem; }
+  .term { background: var(--deep); color: var(--ink); border-radius: 10px; padding: 0.9rem 1rem; border: 1px solid var(--line); }
+  .term strong { display: block; color: var(--mint); font-size: 0.78rem; text-transform: uppercase;
+    letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+  .term p { margin: 0; font-size: 0.86rem; line-height: 1.5; color: var(--body); }
+  h2.section-title {
+    font-size: 1.05rem; margin: 0 0 0.9rem; display: flex; align-items: center; gap: 0.5rem; font-weight: 700;
+  }
+  h2.section-title::before { content: ""; width: 8px; height: 8px; background: var(--mint); border-radius: 2px; flex-shrink: 0; }
+  h2.section-title .note { margin-left: auto; font-size: 0.76rem; font-weight: 400; color: var(--muted); }
+
+  .panel {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 1.1rem 1.25rem 1.3rem;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  }
+
+  .takeaways { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+  .takeaway { background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--mint-dim); border-radius: 10px; padding: 1rem 1.15rem; }
+  .takeaway h3 { margin: 0 0 0.4rem; font-size: 0.9rem; font-weight: 700; }
+  .takeaway p { margin: 0; font-size: 0.86rem; line-height: 1.55; color: var(--body); }
+
+  .cat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; }
+  .cat { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 1rem 1.15rem; border-top: 3px solid var(--line); }
+  .cat.broad { border-top-color: var(--broad); }
+  .cat.reuse { border-top-color: var(--reuse); }
+  .cat.code  { border-top-color: var(--code); }
+  .cat .name { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 600; }
+  .cat .score { font-size: 1.65rem; font-weight: 700; margin: 0.2rem 0 0.35rem; font-variant-numeric: tabular-nums; }
+  .cat p { margin: 0; font-size: 0.84rem; line-height: 1.5; color: var(--body); }
+
+  table.matrix { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+  table.matrix thead th {
+    background: var(--deep); color: var(--ink); padding: 0.55rem 0.6rem; font-weight: 600; text-align: right; white-space: nowrap;
+    border-bottom: 1px solid var(--line);
+  }
+  table.matrix thead th:first-child, table.matrix thead th:nth-child(2) { text-align: left; }
+  table.matrix tbody td { padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--line); text-align: right; font-variant-numeric: tabular-nums; color: var(--body); }
+  table.matrix tbody td:first-child, table.matrix tbody td:nth-child(2) { text-align: left; color: var(--ink); }
+  table.matrix tbody tr:hover td { background: rgba(255,157,66,0.06); }
+  table.matrix td.overall { font-weight: 700; color: var(--ink); }
+  .cat-pill { display: inline-block; padding: 0.1rem 0.45rem; border-radius: 999px; font-size: 0.7rem; font-weight: 600; white-space: nowrap; }
+  .cat-pill.broad { background: rgba(85,211,196,0.12); border: 1px solid rgba(85,211,196,0.35); color: var(--broad); }
+  .cat-pill.reuse { background: rgba(195,155,245,0.12); border: 1px solid rgba(195,155,245,0.35); color: var(--reuse); }
+  .cat-pill.code  { background: rgba(143,214,148,0.12); border: 1px solid rgba(143,214,148,0.35); color: var(--code); }
+  .mono { font-family: "JetBrains Mono", monospace; font-size: 0.8rem; font-weight: 500; }
+
+  .cases { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 1rem; }
+  .case { background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.25); display: flex; flex-direction: column; }
+  .case-head { display: flex; align-items: center; gap: 0.6rem; padding: 0.85rem 1.1rem; border-bottom: 1px solid var(--line); background: rgba(255,255,255,0.03); }
+  .case-head .ticket { font-family: "JetBrains Mono", monospace; font-weight: 500; font-size: 0.88rem; }
+  .case-head .rel { color: var(--muted); font-size: 0.82rem; }
+  .case-head .pct { margin-left: auto; background: var(--deep); color: var(--mint); font-weight: 700; font-size: 0.85rem; padding: 0.18rem 0.5rem; border-radius: 4px; font-variant-numeric: tabular-nums; border: 1px solid var(--line); }
+  .case-body { padding: 0.95rem 1.1rem 1.1rem; flex: 1; }
+  .case-body h4 { margin: 0 0 0.3rem; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 700; }
+  .case-body h4.gap { margin-top: 0.95rem; }
+  .case-body p { margin: 0; font-size: 0.87rem; line-height: 1.58; color: var(--body); }
+  .case-body p.gap-text { color: var(--muted); }
+  .case-links { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0 1.1rem 1rem; }
+  .case-links a {
+    font-family: "JetBrains Mono", monospace; font-size: 0.74rem; font-weight: 500; text-decoration: none;
+    color: var(--ink); background: rgba(255,255,255,0.04); border: 1px solid var(--line); border-radius: 4px; padding: 0.15rem 0.45rem;
+  }
+  .case-links a:hover { background: rgba(255,157,66,0.12); border-color: var(--mint-dim); }
+  code { font-family: "JetBrains Mono", monospace; font-size: 0.82em; background: rgba(255,255,255,0.06); padding: 0.05rem 0.25rem; border-radius: 3px; }
+
+  footer { border-top: 1px solid var(--line); padding: 1.25rem 2.5rem 2.5rem; color: var(--muted); font-size: 0.8rem; line-height: 1.65; max-width: 1500px; }
+  footer strong { color: var(--ink); }
+
+  @media print {
+    body { background: #fff; color: #212322; }
+    .case, .panel, .cat, .takeaway { box-shadow: none; break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="brand">
+    <div class="logo"><svg id="LOGO" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 53.44 45"><defs><style>.cls-1{fill:#e8edf4;}.cls-2{fill:#7aff8a;}</style></defs><path class="cls-1" d="M0,36.87a.75.75,0,0,1,.84-.76h.38c.56,0,.72.2,1,.69l2.16,4.62L6.51,36.8c.23-.51.4-.69.93-.69H7.8a.76.76,0,0,1,.86.76v7.38c0,.42-.18.63-.61.63h-.2c-.41,0-.58-.21-.58-.63V37.89l-2,4.31a.84.84,0,0,1-.93.59.84.84,0,0,1-.94-.59l-2-4.27v6.32c0,.42-.17.63-.6.63H.57c-.4,0-.57-.21-.57-.63Z"/><path class="cls-1" d="M13.16,38.22a3,3,0,0,1,3.09,3.24v.11c0,.28-.09.39-.4.39H11.1a1.94,1.94,0,0,0,0,.24A2.09,2.09,0,0,0,13.29,44a2.12,2.12,0,0,0,2-1.07s.69.1.69.66a1.3,1.3,0,0,1-.71.94,3.85,3.85,0,0,1-2,.52,3.2,3.2,0,0,1-3.41-3.36A3.27,3.27,0,0,1,13.16,38.22Zm0,1a2.05,2.05,0,0,0-2,1.83H15A1.77,1.77,0,0,0,13.15,39.23Z"/><path class="cls-1" d="M30.16,43.4h0a4.66,4.66,0,0,0,1-2.9A4.25,4.25,0,0,0,26.79,36a4.3,4.3,0,0,0-4.41,4.53,4.39,4.39,0,0,0,6.89,3.71l.48.5a.59.59,0,0,0,.87.14l.09-.09a.62.62,0,0,0-.08-.89Zm-3.37.38a3,3,0,0,1-3-3.29,3,3,0,1,1,6,0,3.57,3.57,0,0,1-.53,2L27.9,41.12c-.24-.27-.57-.38-.83-.14l-.09.08a.61.61,0,0,0,.08.86l1.38,1.42A3.15,3.15,0,0,1,26.79,43.78Z"/><path class="cls-1" d="M37.69,38.32h-.15c-.33,0-.58.16-.58.64V42.7a1.92,1.92,0,0,1-1.76,1.13c-1,0-1.54-.65-1.54-1.76V39c0-.5-.25-.64-.59-.64h-.15c-.34,0-.58.16-.58.64v3.27c0,1.6.78,2.76,2.48,2.76A2.49,2.49,0,0,0,37,43.86v.38c0,.49.25.64.59.64h.15c.34,0,.58-.16.58-.64V39C38.28,38.46,38,38.32,37.69,38.32Z"/><path class="cls-1" d="M20.43,38.22a1.63,1.63,0,0,0-1.63,1.22V39c0-.5-.24-.64-.59-.64h-.15c-.33,0-.57.16-.57.64v5.29c0,.48.24.63.59.63h.14c.34,0,.59-.15.59-.63V42c0-1.49.42-2.51,1.46-2.51a1.26,1.26,0,0,1,.82.28s.4-.17.4-.68S21.1,38.22,20.43,38.22Z"/><path class="cls-1" d="M43.33,38.22a2.62,2.62,0,0,0-2.25,1.17V36.27c0-.5-.24-.65-.59-.65h-.15c-.34,0-.58.17-.58.65v8c0,.48.24.63.58.63h.15c.34,0,.58-.15.58-.63v-.39A2.49,2.49,0,0,0,43.29,45a3.1,3.1,0,0,0,3.06-3.4A3.07,3.07,0,0,0,43.33,38.22Zm-.28,5.68a1.93,1.93,0,0,1-2-1.81V40.66a2.05,2.05,0,0,1,2-1.34,2.07,2.07,0,0,1,2,2.29A2,2,0,0,1,43.05,43.9Z"/><path class="cls-1" d="M50.34,38.22a3,3,0,0,1,3.1,3.24v.11c0,.28-.1.39-.4.39H48.28a1,1,0,0,0,0,.24A2.08,2.08,0,0,0,50.48,44a2.12,2.12,0,0,0,2-1.07s.7.1.7.66a1.33,1.33,0,0,1-.71.94,3.89,3.89,0,0,1-2,.52,3.2,3.2,0,0,1-3.4-3.36A3.26,3.26,0,0,1,50.34,38.22Zm0,1a2.05,2.05,0,0,0-2,1.83h3.86A1.77,1.77,0,0,0,50.33,39.23Z"/><path class="cls-1" d="M38.6,5.77,27.35.15a1.4,1.4,0,0,0-1.26,0L14.87,5.76a1.41,1.41,0,0,0-.29.18A1.47,1.47,0,0,0,14.06,7h0V21.09a1.4,1.4,0,0,0,.78,1.26L26.09,28a1.4,1.4,0,0,0,1.26,0l2.88-1.45v3a1.41,1.41,0,0,0,2.82,0v-4.4l5.55-2.78a1.41,1.41,0,0,0,.77-1.26V7A1.42,1.42,0,0,0,38.6,5.77ZM30.23,23.39l-3.51,1.76-9.85-4.92V9.31L30.23,16Zm6.33-3.16L33.05,22V15.12a1.4,1.4,0,0,0-.78-1.26L18.61,7,26.72,3,36.56,7.9Z"/><path class="cls-2" d="M36.56,7.9V20.23L33.05,22V15.12a1.4,1.4,0,0,0-.78-1.26L18.61,7,26.72,3Z"/><polygon class="cls-2" points="30.23 15.99 30.23 23.39 26.72 25.15 16.88 20.23 16.88 9.31 30.23 15.99"/></svg></div>
+    <div>
+      <div class="badge">Platform Engineering &middot; Sherlock Evaluation</div>
+      <h1>Case analysis: Sherlock vs actual</h1>
+      <p>Eight closed PES cases where Sherlock investigated independently, compared against the root cause and fix the engineer actually landed on.</p>
+    </div>
+  </div>
+  <div class="meta">
+    <div><strong>8</strong> cases &middot; <strong>3</strong> categories</div>
+    <div>Drawn from 87 scored Sherlock runs</div>
+    <div>Prepared 18 Sep 2026</div>
+  </div>
+</header>
+
+<main>
+
+  <section class="terms" aria-label="Scoring definitions">
+    <div class="term">
+      <strong>Root cause</strong>
+      <p>What broke.</p>
+    </div>
+    <div class="term">
+      <strong>Evidence</strong>
+      <p>How Sherlock showed that &mdash; using the same logs, tickets, PRs, and systems the engineer used, or a close enough path.</p>
+    </div>
+    <div class="term">
+      <strong>Fix</strong>
+      <p>What to do &mdash; the recommended action.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title">What this shows</h2>
+    <div class="takeaways">
+      <div class="takeaway">
+        <h3>It reaches the same answer</h3>
+        <p>On all eight cases Sherlock named the same root cause and recommended the same remedy as the engineer who closed the ticket &mdash; including rejecting the tempting wrong fix, such as rolling back a release or restarting a feed that was never broken.</p>
+      </div>
+      <div class="takeaway">
+        <h3>It carries forward what we already learned</h3>
+        <p>In the three reuse cases, Sherlock built on the same earlier PES ticket the engineer leaned on, then extended it rather than repeating it &mdash; explaining why the older case closed differently, or warning what would break next.</p>
+      </div>
+      <div class="takeaway">
+        <h3>Sometimes it gets there first</h3>
+        <p>On the ICE case it went straight to leaving the retired service alone, which the ticket only settled after the platform team spoke up. On the Admin UI case it named the exact change that caused the break while the team was still asking whether anything had changed.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title">By case type</h2>
+    <div class="cat-grid">
+      <div class="cat broad">
+        <div class="name">Broad investigation</div>
+        <div class="score">99.3%</div>
+        <p>Cases where many systems had to be ruled out before the real cause surfaced.</p>
+      </div>
+      <div class="cat reuse">
+        <div class="name">Prior-case reuse</div>
+        <div class="score">97.7%</div>
+        <p>Cases closed by building on an earlier PES ticket rather than starting over.</p>
+      </div>
+      <div class="cat code">
+        <div class="name">Code change</div>
+        <div class="score">99.0%</div>
+        <p>Cases where the change Sherlock recommended is the change that shipped.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title">
+      Scorecard
+      <span class="note">Equal blend of three parts: root cause, evidence trail, and fix</span>
+    </h2>
+    <div class="panel">
+      <table class="matrix">
+        <thead>
+          <tr>
+            <th>Case</th><th>Type</th><th>Root cause</th><th>Evidence</th><th>Fix</th><th>Overall</th><th>Reuse</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="mono">PES-1213</td><td><span class="cat-pill broad">Broad</span></td><td>100%</td><td>100%</td><td>100%</td><td class="overall">100%</td><td>&mdash;</td></tr>
+          <tr><td class="mono">PES-1126</td><td><span class="cat-pill broad">Broad</span></td><td>100%</td><td>95%</td><td>100%</td><td class="overall">98%</td><td>&mdash;</td></tr>
+          <tr><td class="mono">PES-1167</td><td><span class="cat-pill broad">Broad</span></td><td>100%</td><td>100%</td><td>100%</td><td class="overall">100%</td><td>&mdash;</td></tr>
+          <tr><td class="mono">PES-1168</td><td><span class="cat-pill reuse">Reuse</span></td><td>100%</td><td>100%</td><td>95%</td><td class="overall">98%</td><td>100%</td></tr>
+          <tr><td class="mono">PES-1186</td><td><span class="cat-pill reuse">Reuse</span></td><td>100%</td><td>95%</td><td>100%</td><td class="overall">98%</td><td>100%</td></tr>
+          <tr><td class="mono">PES-1141</td><td><span class="cat-pill reuse">Reuse</span></td><td>100%</td><td>95%</td><td>95%</td><td class="overall">97%</td><td>100%</td></tr>
+          <tr><td class="mono">PES-1196</td><td><span class="cat-pill code">Code</span></td><td>100%</td><td>95%</td><td>100%</td><td class="overall">98%</td><td>&mdash;</td></tr>
+          <tr><td class="mono">PES-1197</td><td><span class="cat-pill code">Code</span></td><td>100%</td><td>100%</td><td>100%</td><td class="overall">100%</td><td>&mdash;</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title">
+      Cases requiring broad investigation
+      <span class="note">Many systems checked before the cause surfaced</span>
+    </h2>
+    <div class="cases">
+
+      <div class="case">
+        <div class="case-head">
+          <span class="ticket">PES-1213</span><span class="rel">ICE raw &rarr; bronze</span><span class="pct">100%</span>
+        </div>
+        <div class="case-body">
+          <h4>What matched</h4>
+          <p>Sherlock's analysis: not a vendor outage. The old bronze path was turned off on purpose, and dashboards still expected it, so they looked like data was missing. Actual RCA: same &mdash; Kafka dedupe and ice-norm az1 were intentionally shut down; live feed now goes through ice normalisation, and serving was fine.</p>
+          <h4 class="gap">What was missing</h4>
+          <p class="gap-text">Nothing missing in Sherlock's analysis. It went straight to leaving the retired service alone, which the ticket only settled on after the platform team confirmed the shutdown was deliberate.</p>
+        </div>
+        <div class="case-links"><a href="https://merqube.atlassian.net/browse/PES-1213">PES-1213</a></div>
+      </div>
+
+      <div class="case">
+        <div class="case-head">
+          <span class="ticket">PES-1126</span><span class="rel">IndexAPI portfolio storm</span><span class="pct">98%</span>
+        </div>
+        <div class="case-body">
+          <h4>What matched</h4>
+          <p>Sherlock's analysis: the flood of alerts was a noisy IndexAPI check, not broken calculations. Many production indices never have that portfolio table, so rollback would not have helped. Actual RCA: same &mdash; page only when a table is actually expected, and open ENG-3049.</p>
+          <h4 class="gap">What was missing</h4>
+          <p class="gap-text">Nothing missing in Sherlock's analysis for how the case was resolved. Which caller drove the burst was never pinned down on the ticket either, and the fix did not depend on it.</p>
+        </div>
+        <div class="case-links"><a href="https://merqube.atlassian.net/browse/PES-1126">PES-1126</a><a href="https://merqube.atlassian.net/browse/ENG-3049">ENG-3049</a></div>
+      </div>
+
+      <div class="case">
+        <div class="case-head">
+          <span class="ticket">PES-1167</span><span class="rel">PY560 UK holiday skip</span><span class="pct">100%</span>
+        </div>
+        <div class="case-body">
+          <h4>What matched</h4>
+          <p>Sherlock's analysis: the UK holiday calendar made the job look for Friday's file instead of the Monday file Bloomberg sent. The job then reported success, so a normal rerun would skip again. Actual RCA: same &mdash; remove the holiday effect for that day, copy the Aug 31 file, then rerun HSIEM.</p>
+          <h4 class="gap">What was missing</h4>
+          <p class="gap-text">Nothing missing in Sherlock's analysis for how the case was resolved.</p>
+        </div>
+        <div class="case-links"><a href="https://merqube.atlassian.net/browse/PES-1167">PES-1167</a></div>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title">
+      Previous case used to finish the new one
+      <span class="note">Sherlock reused the same earlier PES ticket the engineer used</span>
+    </h2>
+    <div class="cases">
+
+      <div class="case">
+        <div class="case-head">
+          <span class="ticket">PES-1168</span><span class="rel">Used PES-352</span><span class="pct">98%</span>
+        </div>
+        <div class="case-body">
+          <h4>What matched</h4>
+          <p>Sherlock's analysis ran on top of PES-352: the upload had actually succeeded. Our reply carries two extra fields the client's code refuses to accept, so the client read its own parsing failure as a rejected upload. Actual RCA: same &mdash; the same earlier Citi case was cited, and the answer was again that the client must ignore extra fields rather than us removing them. Sherlock went one step further and warned that patching only the first field leaves the second one to break next.</p>
+          <h4 class="gap">What was missing</h4>
+          <p class="gap-text">Nothing missing in Sherlock's analysis for how the case was resolved.</p>
+        </div>
+        <div class="case-links"><a href="https://merqube.atlassian.net/browse/PES-1168">PES-1168</a><a href="https://merqube.atlassian.net/browse/PES-352">PES-352</a></div>
+      </div>
+
+      <div class="case">
+        <div class="case-head">
+          <span class="ticket">PES-1186</span><span class="rel">Used PES-1112</span><span class="pct">98%</span>
+        </div>
+        <div class="case-body">
+          <h4>What matched</h4>
+          <p>Sherlock's analysis ran on top of PES-1112 and carried its measured checker version forward: the deadline checker was still on a December 2025 image that did not accept the newer CLOSE event, so it crashed and paged while the three Barclays books were actually printing 16:00 levels. It added why PES-1112 had closed without a redeploy &mdash; those earlier books were development-only, so the same crash never paged. Actual RCA: same &mdash; old checker image, roll it to 1.0.8096.</p>
+          <h4 class="gap">What was missing</h4>
+          <p class="gap-text">Nothing missing in Sherlock's analysis for the fix that was applied. Carrying out the redeploy sat with the operator on the ticket.</p>
+        </div>
+        <div class="case-links"><a href="https://merqube.atlassian.net/browse/PES-1186">PES-1186</a><a href="https://merqube.atlassian.net/browse/PES-1112">PES-1112</a></div>
+      </div>
+
+      <div class="case">
+        <div class="case-head">
+          <span class="ticket">PES-1141</span><span class="rel">Used PES-1135</span><span class="pct">97%</span>
+        </div>
+        <div class="case-body">
+          <h4>What matched</h4>
+          <p>Sherlock's analysis ran on top of PES-1135: a recent Admin UI rewrite dropped support for the older way of listing an index's reports, so those indices rendered the report ID one character at a time and showed no name. Sherlock named the exact change that caused it while the team was still asking whether anything had changed recently. Actual RCA: same &mdash; the same older format was identified as still valid, the fix went in the same place, and one engineering ticket was raised to cover this case and PES-1135 together.</p>
+          <h4 class="gap">What was missing</h4>
+          <p class="gap-text">Nothing missing in Sherlock's analysis for how the case was resolved. How many other indices still use the older report format was not counted on the ticket either.</p>
+        </div>
+        <div class="case-links"><a href="https://merqube.atlassian.net/browse/PES-1141">PES-1141</a><a href="https://merqube.atlassian.net/browse/PES-1135">PES-1135</a></div>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title">
+      Code changes needed from the PES ticket
+      <span class="note">What Sherlock recommended is what shipped</span>
+    </h2>
+    <div class="cases">
+
+      <div class="case">
+        <div class="case-head">
+          <span class="ticket">PES-1196</span><span class="rel">dev PR 10882</span><span class="pct">98%</span>
+        </div>
+        <div class="case-body">
+          <h4>What matched</h4>
+          <p>Sherlock's analysis: keep the original selection date, but stamp the stored portfolio date to the later retry day so save can succeed. Do not loosen the save check. Actual RCA and shipped fix: same two-line change in PR 10882.</p>
+          <h4 class="gap">What was missing</h4>
+          <p class="gap-text">Nothing missing in Sherlock's analysis for the fix that shipped.</p>
+        </div>
+        <div class="case-links"><a href="https://merqube.atlassian.net/browse/PES-1196">PES-1196</a><a href="https://github.com/merqurian/dev/pull/10882">PR 10882</a></div>
+      </div>
+
+      <div class="case">
+        <div class="case-head">
+          <span class="ticket">PES-1197</span><span class="rel">ENG-3205</span><span class="pct">100%</span>
+        </div>
+        <div class="case-body">
+          <h4>What matched</h4>
+          <p>Sherlock's analysis: next-business-day naming was working as designed. The client wanted next calendar day, including weekends, so add a new token and use it only on this one report. Actual RCA and shipped fix: same &mdash; ENG-3205 added <code>{NEXT_CALENDAR_DATE}</code> for BXIIRDS6.</p>
+          <h4 class="gap">What was missing</h4>
+          <p class="gap-text">Nothing missing in Sherlock's analysis for the change that shipped.</p>
+        </div>
+        <div class="case-links"><a href="https://merqube.atlassian.net/browse/PES-1197">PES-1197</a><a href="https://merqube.atlassian.net/browse/ENG-3205">ENG-3205</a></div>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <p><strong>How the score works.</strong> Each case is scored on three parts, weighted equally: the root cause, the evidence trail, and the fix. A case can name the same cause and still sit below 100 if the evidence trail or the recommended change is not a complete match.</p>
+  <p><strong>Scope.</strong> These are eight of the strongest matches from 87 scored Sherlock runs, so they show what the system does at its best rather than an average across all cases.</p>
+</footer>
+
+</body>
+</html>

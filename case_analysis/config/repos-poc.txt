@@ -1,0 +1,5 @@
+# Minimal repo set for Sherlock Kubernetes POC image builds.
+# Full production image should use config/repos.txt instead.
+codebase/dev
+codebase/python-merq-utils
+codebase/python-platform

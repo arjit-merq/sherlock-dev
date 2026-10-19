@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="color-scheme" content="light">
+    <title>Case Analysis Console</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Fira+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/tokens.css">
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="masthead">
+        <a class="brand" href="#manual" aria-label="Case Analysis Console home">
+          <span class="brand__mark" aria-hidden="true">CA</span>
+          <span>
+            <strong>Case Analysis</strong>
+            <small>Local investigation console</small>
+          </span>
+        </a>
+        <div class="system-state" id="system-state" aria-live="polite">
+          <span class="status-dot status-dot--idle"></span>
+          <span>Connecting</span>
+        </div>
+      </header>
+
+      <nav class="tab-rail" aria-label="Console sections" role="tablist">
+        <button class="tab is-active" id="tab-manual" role="tab" aria-selected="true" aria-controls="panel-manual" data-tab="manual">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          Manual
+        </button>
+        <button class="tab" id="tab-automatic" role="tab" aria-selected="false" aria-controls="panel-automatic" data-tab="automatic">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.34-5.66M4 4v5h5"/></svg>
+          Automatic
+          <span class="tab__signal" id="auto-tab-signal" aria-label="Automatic polling status"></span>
+        </button>
+        <button class="tab" id="tab-capabilities" role="tab" aria-selected="false" aria-controls="panel-capabilities" data-tab="capabilities">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg>
+          Capabilities
+        </button>
+        <button class="tab" id="tab-history" role="tab" aria-selected="false" aria-controls="panel-history" data-tab="history">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2"/></svg>
+          History
+        </button>
+      </nav>
+
+      <main>
+        <section class="page-panel is-active" id="panel-manual" role="tabpanel" aria-labelledby="tab-manual">
+          <div class="page-heading">
+            <div>
+              <h1>Investigate one case.</h1>
+              <p>Paste a case key, number, or Jira link. The existing read-only workflow handles preflight, repository sync, evidence gathering, and distillation.</p>
+            </div>
+            <div class="counter-block">
+              <strong id="active-count">0</strong>
+              <span>active now</span>
+            </div>
+          </div>
+
+          <form class="launch-form" id="launch-form" novalidate>
+            <div class="field">
+              <label for="case-input">PES or ENG case</label>
+              <input id="case-input" name="case" type="text" placeholder="PES-1069 or Jira link" autocomplete="off" aria-describedby="case-help">
+              <small id="case-help">Bare numbers default to PES.</small>
+            </div>
+            <div class="field field--context">
+              <label for="context-input">Additional context <span>optional</span></label>
+              <textarea id="context-input" name="context" rows="3" placeholder="A recent deploy, affected index, or relevant thread"></textarea>
+              <small>Added to the investigation prompt; never posted to Jira.</small>
+            </div>
+            <button class="button button--primary" id="launch-button" type="submit">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 14-7-4 14-3-6-7-1Z"/></svg>
+              <span>Start investigation</span>
+            </button>
+          </form>
+
+          <section class="workbench" aria-labelledby="current-runs-heading">
+            <div class="section-heading">
+              <div>
+                <h2 id="current-runs-heading">Current investigations</h2>
+                <p>Stages update from files produced by the runner.</p>
+              </div>
+              <button class="button button--quiet" id="refresh-runs" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.34-5.66M4 4v5h5"/></svg>
+                Refresh
+              </button>
+            </div>
+            <div class="run-list" id="current-runs" aria-live="polite">
+              <div class="skeleton skeleton--run"></div>
+            </div>
+          </section>
+        </section>
+
+        <section class="page-panel" id="panel-automatic" role="tabpanel" aria-labelledby="tab-automatic" hidden>
+          <div class="page-heading">
+            <div>
+              <h1>Watch for new PES cases.</h1>
+              <p>Polling lives only inside this UI process. Existing open cases become the baseline; only cases created while the console is running are queued.</p>
+            </div>
+            <div class="poll-switch">
+              <span id="auto-state-label">Checking</span>
+              <button class="switch" id="auto-toggle" type="button" role="switch" aria-checked="false" aria-label="Toggle automatic Jira polling">
+                <span></span>
+              </button>
+            </div>
+          </div>
+
+          <div class="telemetry-grid">
+            <article class="telemetry">
+              <span>Polling interval</span>
+              <strong id="poll-interval">—</strong>
+              <small>Configured locally</small>
+            </article>
+            <article class="telemetry">
+              <span>Investigation delay</span>
+              <strong id="poll-delay">—</strong>
+              <small>After Jira creation</small>
+            </article>
+            <article class="telemetry">
+              <span>Open baseline</span>
+              <strong id="known-count">—</strong>
+              <small>Observed, not launched</small>
+            </article>
+            <article class="telemetry">
+              <span>Last Jira check</span>
+              <strong id="last-check">—</strong>
+              <small id="poll-health">Waiting for first poll</small>
+            </article>
+          </div>
+
+          <section class="workbench" aria-labelledby="queue-heading">
+            <div class="section-heading">
+              <div>
+                <h2 id="queue-heading">Automatic queue</h2>
+                <p>New cases wait here until their five-minute delay expires.</p>
+              </div>
+              <button class="button button--quiet" id="poll-now" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 12h8M12 8v8"/></svg>
+                Poll now
+              </button>
+            </div>
+            <div class="queue-list" id="auto-queue" aria-live="polite"></div>
+          </section>
+
+          <section class="notice" id="auto-error" role="status" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4M12 17h.01M10.3 4.8 2.8 18a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 4.8a2 2 0 0 0-3.4 0Z"/></svg>
+            <div>
+              <strong>Jira polling needs attention</strong>
+              <p id="auto-error-text"></p>
+            </div>
+          </section>
+        </section>
+
+        <section class="page-panel" id="panel-capabilities" role="tabpanel" aria-labelledby="tab-capabilities" hidden>
+          <div class="page-heading">
+            <div>
+              <h1>How the pieces connect.</h1>
+              <p>One support case, start to finish: what triggers the work, what it reads, what it produces, and what feeds back into the next case. Dashed pills are not built yet.</p>
+            </div>
+          </div>
+
+          <div class="flow-legend" aria-label="Pill meanings">
+            <span class="pill pill--live">Running today</span>
+            <span class="pill pill--source">System it reads</span>
+            <span class="pill pill--guard">Guardrail</span>
+            <span class="pill pill--planned">Planned</span>
+          </div>
+
+          <ol class="flow-map">
+            <li class="flow-node">
+              <span class="flow-node__marker" aria-hidden="true">01</span>
+              <div class="flow-node__body">
+                <h2>A case arrives</h2>
+                <p>Either an engineer starts one by hand, or the console notices a newly created support case and holds it briefly so the reporter can finish writing it up.</p>
+                <div class="pill-row">
+                  <span class="pill pill--source">Jira</span>
+                  <span class="pill pill--live">Checks every 60s</span>
+                  <span class="pill pill--live">Holds new case 5 min</span>
+                  <span class="pill pill--live">Manual launch</span>
+                  <span class="pill pill--guard">Only cases created while running</span>
+                </div>
+              </div>
+            </li>
+
+            <li class="flow-node">
+              <span class="flow-node__marker" aria-hidden="true">02</span>
+              <div class="flow-node__body">
+                <h2>Check its own footing</h2>
+                <p>Before reasoning about anything it confirms it can actually reach the systems, and fast-forwards the repositories so conclusions are drawn against deployed code rather than a stale checkout.</p>
+                <div class="pill-row">
+                  <span class="pill pill--source">VPN</span>
+                  <span class="pill pill--source">AWS SSO</span>
+                  <span class="pill pill--source">~/.merq_creds</span>
+                  <span class="pill pill--live">Repo fast-forward</span>
+                </div>
+              </div>
+            </li>
+
+            <li class="flow-node">
+              <span class="flow-node__marker" aria-hidden="true">03</span>
+              <div class="flow-node__body">
+                <h2>Recall what we already learned</h2>
+                <p>It looks for a playbook matching this failure class first. A hit brings the proven path and, just as important, the skip list of checks that wasted time last round.</p>
+                <div class="pill-row">
+                  <span class="pill pill--live">Playbook index</span>
+                  <span class="pill pill--live">Optimal path</span>
+                  <span class="pill pill--live">Skip list</span>
+                  <span class="pill pill--planned">Vector recall by meaning</span>
+                </div>
+              </div>
+            </li>
+
+            <li class="flow-node">
+              <span class="flow-node__marker" aria-hidden="true">04</span>
+              <div class="flow-node__body">
+                <h2>Read the systems that hold the answer</h2>
+                <p>Only the sources the playbook points at, rather than everything at once. Whatever it could not reach is named in the report instead of quietly skipped.</p>
+                <div class="pill-row">
+                  <span class="pill pill--source">Airflow · Merq</span>
+                  <span class="pill pill--source">Airflow · Helix</span>
+                  <span class="pill pill--source">IndexAPI manifest</span>
+                  <span class="pill pill--source">SecAPI metrics</span>
+                  <span class="pill pill--source">DataAPI ingestion</span>
+                  <span class="pill pill--source">S3 listing</span>
+                  <span class="pill pill--source">Postgres</span>
+                  <span class="pill pill--source">GitHub code</span>
+                  <span class="pill pill--guard">Read-only, SELECT only</span>
+                </div>
+              </div>
+            </li>
+
+            <li class="flow-node">
+              <span class="flow-node__marker" aria-hidden="true">05</span>
+              <div class="flow-node__body">
+                <h2>Explain it</h2>
+                <p>One support-first report: what happened, who is affected, the decision, what to do now, what not to do, plus a PE appendix with technical findings.</p>
+                <div class="pill-row">
+                  <span class="pill pill--live">Decision + certainty</span>
+                  <span class="pill pill--live">Do now / do not do</span>
+                  <span class="pill pill--live">Technical appendix</span>
+                  <span class="pill pill--live">Jira comment draft</span>
+                  <span class="pill pill--guard">Proposes, never commits or posts</span>
+                </div>
+              </div>
+            </li>
+
+            <li class="flow-node">
+              <span class="flow-node__marker" aria-hidden="true">06</span>
+              <div class="flow-node__body">
+                <h2>Everything lands on disk</h2>
+                <p>Each run keeps its prompt, artifacts, logs, and report, so any conclusion can be audited later. Files are the record; search is built on top of them.</p>
+                <div class="pill-row">
+                  <span class="pill pill--live">Run folder per attempt</span>
+                  <span class="pill pill--live">Report + artifacts</span>
+                  <span class="pill pill--live">Full evidence trail</span>
+                  <span class="pill pill--planned">One Postgres store</span>
+                  <span class="pill pill--planned">Embeddings alongside cases</span>
+                </div>
+              </div>
+            </li>
+
+            <li class="flow-node flow-node--loop">
+              <span class="flow-node__marker" aria-hidden="true">07</span>
+              <div class="flow-node__body">
+                <h2>Keep only the path that worked</h2>
+                <p>Once solved, it retraces its own investigation and keeps the steps that changed the conclusion, plus the dead ends worth skipping. That becomes the playbook the next case starts from.</p>
+                <div class="pill-row">
+                  <span class="pill pill--live">Distill optimal path</span>
+                  <span class="pill pill--live">Write playbook</span>
+                  <span class="pill pill--live">Record skip list</span>
+                </div>
+                <p class="flow-edge">Feeds back into step 03 — this is what makes later cases shorter and cheaper.</p>
+              </div>
+            </li>
+
+            <li class="flow-node">
+              <span class="flow-node__marker" aria-hidden="true">08</span>
+              <div class="flow-node__body">
+                <h2>When the case closes</h2>
+                <p>On closure it writes the retrospective: the timeline, what actually fixed the problem, and what would have caught it earlier.</p>
+                <div class="pill-row">
+                  <span class="pill pill--live">Retrospective on close</span>
+                  <span class="pill pill--source">Jira status</span>
+                </div>
+              </div>
+            </li>
+
+            <li class="flow-node">
+              <span class="flow-node__marker" aria-hidden="true">09</span>
+              <div class="flow-node__body">
+                <h2>When the same thing keeps happening</h2>
+                <p>Once a failure class shows up in three or more cases, it drafts a support-facing runbook so the issue stops arriving as a fresh investigation at all.</p>
+                <div class="pill-row">
+                  <span class="pill pill--live">Runbook draft at 3+ cases</span>
+                  <span class="pill pill--guard">Publishing needs a human</span>
+                  <span class="pill pill--planned">Guided fix for easy repeats</span>
+                </div>
+              </div>
+            </li>
+          </ol>
+
+          <p class="flow-footnote">Runs on one engineer's laptop, reachable only from that machine, and never writes to Jira, Slack, GitHub, or any database.</p>
+        </section>
+
+        <section class="page-panel" id="panel-history" role="tabpanel" aria-labelledby="tab-history" hidden>
+          <div class="page-heading">
+            <div>
+              <h1>Investigation history.</h1>
+              <p>Completed investigations and optimized follow-ups from the local artifact store.</p>
+            </div>
+          </div>
+
+          <div class="history-tools">
+            <label class="search-field" for="history-search">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+              <span class="sr-only">Filter investigation history</span>
+              <input id="history-search" type="search" placeholder="Filter by case key">
+            </label>
+          </div>
+          <div class="history-list" id="history-list" aria-live="polite">
+            <div class="skeleton skeleton--table"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <dialog class="report-dialog" id="report-dialog" aria-labelledby="report-title">
+      <div class="report-dialog__head">
+        <div>
+          <span id="report-kind">Report</span>
+          <h2 id="report-title">Investigation report</h2>
+        </div>
+        <button class="icon-button" id="close-report" type="button" aria-label="Close report">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+      <article class="report-body" id="report-content" tabindex="0"></article>
+    </dialog>
+
+    <div class="toast" id="toast" role="alert" aria-live="assertive" hidden>
+      <span id="toast-message"></span>
+      <button type="button" id="toast-close" aria-label="Dismiss notification">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17"/></svg>
+      </button>
+    </div>
+
+    <script src="/app.js" defer></script>
+  </body>
+</html>

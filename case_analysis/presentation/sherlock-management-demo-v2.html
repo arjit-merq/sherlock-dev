@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sherlock — Management Showcase</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --surface2: #243044;
+      --text: #e8edf4;
+      --muted: #8b9cb3;
+      --accent: #3d9cf5;
+      --accent2: #5eead4;
+      --warn: #fbbf24;
+      --current: #22c55e;
+      --prototype: #f59e0b;
+      --roadmap: #6366f1;
+      --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+      --mono: "SF Mono", "Cascadia Code", Consolas, monospace;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      background: #06080c;
+      color: var(--text);
+      font-family: var(--font);
+      overflow: hidden;
+    }
+
+    .deck-wrapper {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .slide-deck {
+      position: relative;
+      width: 1280px;
+      height: 720px;
+      flex: 0 0 auto;
+      transform-origin: center center;
+      background: var(--bg);
+      box-shadow: 0 24px 80px rgba(0,0,0,0.55);
+      overflow: hidden;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      padding: 40px 56px 68px;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.35s ease;
+      background: radial-gradient(ellipse at 20% 0%, rgba(61,156,245,0.08), transparent 55%),
+                  radial-gradient(ellipse at 80% 100%, rgba(94,234,212,0.05), transparent 50%),
+                  var(--bg);
+    }
+
+    .slide.active { opacity: 1; visibility: visible; }
+    .slide.dense { padding: 32px 48px 64px; }
+
+    .slide-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      font-size: 13px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .slide-num {
+      font-size: 13px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    h1 {
+      font-size: clamp(26px, 2.8vw, 40px);
+      font-weight: 650;
+      line-height: 1.15;
+      margin-bottom: 10px;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      font-size: clamp(15px, 1.5vw, 20px);
+      color: var(--muted);
+      line-height: 1.45;
+      max-width: 820px;
+    }
+
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 18px 20px;
+    }
+
+    .card h3 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    .card p, .card li {
+      font-size: 13px;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+
+    .card ul { padding-left: 18px; }
+
+    .metric {
+      text-align: center;
+      padding: 16px 10px;
+    }
+
+    .metric .value {
+      font-size: clamp(26px, 2.8vw, 36px);
+      font-weight: 700;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .metric .label {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 5px;
+      line-height: 1.3;
+    }
+
+    .pill {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 3px 9px;
+      border-radius: 999px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    .pill.current { background: rgba(34,197,94,0.18); color: #4ade80; }
+    .pill.prototype { background: rgba(245,158,11,0.18); color: #fbbf24; }
+    .pill.roadmap { background: rgba(99,102,241,0.18); color: #a5b4fc; }
+
+    .callout {
+      border-left: 3px solid var(--warn);
+      background: rgba(251,191,36,0.08);
+      padding: 12px 16px;
+      border-radius: 0 8px 8px 0;
+      font-size: 13px;
+      line-height: 1.45;
+      color: var(--text);
+      margin-top: 14px;
+    }
+
+    .callout strong { color: var(--warn); }
+
+    .title-slide { justify-content: center; text-align: center; }
+
+    .title-slide .content {
+      width: 100%;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .title-slide .subtitle {
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .title-slide h1 {
+      font-size: clamp(36px, 4.5vw, 56px);
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .title-slide .meta {
+      margin-top: 28px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .progress-bar {
+      position: absolute;
+      top: 0; left: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transition: width 0.3s;
+      z-index: 10;
+    }
+
+    .nav {
+      position: absolute;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      z-index: 10;
+    }
+
+    .nav button {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    .nav button:hover { background: rgba(255,255,255,0.12); }
+    .nav span { font-size: 13px; color: var(--muted); min-width: 40px; text-align: center; }
+
+    .example-card {
+      border-left: 3px solid var(--accent);
+    }
+
+    .example-card .case-key {
+      font-family: var(--mono);
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--accent2);
+      margin-bottom: 6px;
+    }
+
+    .example-card .confidence {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+
+    /* Mermaid map (slide 4) */
+    .slide-map { padding: 22px 28px 58px; }
+    .slide-map h1 {
+      font-size: clamp(17px, 1.8vw, 22px);
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, var(--text), var(--muted));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .map-frame-wrap {
+      flex: 1;
+      min-height: 0;
+      border-radius: 14px;
+      overflow: hidden;
+      padding: 1px;
+      background: linear-gradient(145deg, rgba(61,156,245,0.35), rgba(167,139,250,0.2), rgba(94,234,212,0.2));
+      box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+    }
+
+    .map-frame-inner {
+      height: 100%;
+      min-height: 0;
+      border-radius: 13px;
+      overflow: hidden;
+      background: #08111f;
+    }
+
+    .map-frame-inner.tall {
+      min-height: 0;
+    }
+
+    .map-frame-wrap iframe {
+      width: 100%;
+      min-width: 0;
+      height: 100%;
+      min-height: 0;
+      border: none;
+      display: block;
+    }
+
+    .external-slide {
+      padding: 0 0 54px;
+      background: #0f1419;
+    }
+
+    .external-slide iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+      background: #0f1419;
+    }
+
+    .external-slide + .nav,
+    .nav {
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: rgba(6,8,12,0.82);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+      backdrop-filter: blur(8px);
+    }
+
+    .legend {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .improve-list li { margin-bottom: 4px; }
+
+    /* Slide 2: challenge grid */
+    .challenge-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 12px;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .chal-card {
+      position: relative;
+      background: var(--surface);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 12px;
+      padding: 13px 14px 12px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .chal-card::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 3px;
+      background: var(--chip);
+    }
+
+    .chal-chip {
+      display: inline-flex;
+      align-self: flex-start;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--chip);
+      background: color-mix(in srgb, var(--chip) 16%, transparent);
+      border: 1px solid color-mix(in srgb, var(--chip) 40%, transparent);
+      border-radius: 999px;
+      padding: 2px 8px;
+      margin-bottom: 7px;
+    }
+
+    .chal-card h3 {
+      font-size: 13.5px;
+      font-weight: 650;
+      color: var(--text);
+      margin-bottom: 6px;
+      line-height: 1.25;
+    }
+
+    .chal-card ul {
+      padding-left: 15px;
+      margin: 0;
+    }
+
+    .chal-card li {
+      font-size: 11.3px;
+      line-height: 1.38;
+      color: var(--muted);
+      margin-bottom: 3px;
+    }
+
+    .chal-card li::marker { color: var(--chip); }
+
+    .chal-1 { --chip: #66a3ff; }
+    .chal-2 { --chip: #5ee8da; }
+    .chal-3 { --chip: #ffc866; }
+    .chal-4 { --chip: #b596ff; }
+    .chal-5 { --chip: #ff8bb4; }
+    .chal-6 { --chip: #6ee7a8; }
+    .chal-7 { --chip: #a5b4fc; }
+
+    .chal-card.impact {
+      background: linear-gradient(150deg, rgba(94,234,212,0.14), rgba(61,156,245,0.07));
+      border: 1px solid rgba(94,234,212,0.32);
+      justify-content: center;
+    }
+
+    .chal-card.impact .chal-chip {
+      --chip: #5eead4;
+    }
+
+    .chal-card.impact h3 {
+      font-size: 14px;
+      color: #a7f3e8;
+      margin-bottom: 5px;
+    }
+
+    .chal-card.impact p {
+      font-size: 11.5px;
+      line-height: 1.4;
+      color: var(--text);
+    }
+
+    @media (max-width: 900px) {
+      .slide { padding: 28px 24px 60px; }
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="deck-wrapper">
+    <div class="slide-deck" id="deck">
+      <div class="progress-bar" id="progress"></div>
+
+      <!-- Slide 1: Intro -->
+      <section class="slide active title-slide" data-slide="1">
+        <div class="content">
+          <p class="brand">Platform Engineering Support</p>
+          <h1>Sherlock</h1>
+          <p class="subtitle">Automated first-pass investigation for PES cases — evidence-backed reports, Slack progress, and playbooks that compound over time</p>
+          <p class="meta">Management showcase · September 2026<br>
+            <span class="pill current">Working prototype</span>
+            <span class="pill prototype">Case Analysis in code/UI</span>
+          </p>
+        </div>
+      </section>
+
+      <!-- Slide 2: Problems -->
+      <section class="slide dense" data-slide="2">
+        <div class="slide-header">
+          <span class="brand">Why we built this</span>
+          <span class="slide-num">2 / 7</span>
+        </div>
+        <h1>Challenges for PE support</h1>
+        <div class="content">
+          <div class="challenge-grid">
+            <div class="chal-card chal-1">
+              <span class="chal-chip">System</span>
+              <h3>Complex Legacy System</h3>
+              <ul>
+                <li>Poorly structured, hard to navigate</li>
+                <li>Troubleshooting takes disproportionate time</li>
+              </ul>
+            </div>
+            <div class="chal-card chal-2">
+              <span class="chal-chip">Process</span>
+              <h3>Time-Consuming Investigation</h3>
+              <ul>
+                <li>Manual review to gather relevant info per case</li>
+                <li>Every case starts from a blank slate</li>
+              </ul>
+            </div>
+            <div class="chal-card chal-3">
+              <span class="chal-chip">Approach</span>
+              <h3>Reactive, Not Proactive</h3>
+              <ul>
+                <li>Investigation starts only after issues are raised</li>
+                <li>Historical knowledge isn't used upfront</li>
+              </ul>
+            </div>
+            <div class="chal-card chal-4">
+              <span class="chal-chip">Discovery</span>
+              <h3>Previous Fixes Are Hard to Find</h3>
+              <ul>
+                <li>Fix may already exist in Jira or with another engineer</li>
+                <li>Comments often lack the technical "how" and "why"</li>
+              </ul>
+            </div>
+            <div class="chal-card chal-5">
+              <span class="chal-chip">Duplication</span>
+              <h3>Repeated Investigation</h3>
+              <ul>
+                <li>Recurring issues re-investigated from scratch</li>
+                <li>Past-case knowledge rarely reused</li>
+              </ul>
+            </div>
+            <div class="chal-card chal-6">
+              <span class="chal-chip">Evidence</span>
+              <h3>Same evidence hunt on most cases</h3>
+              <ul>
+                <li>Airflow task logs</li>
+                <li>S3 data presence · SecAPI levels · DB1 checks</li>
+                <li>Codebase + prior tickets · pod status</li>
+              </ul>
+            </div>
+            <div class="chal-card chal-7">
+              <span class="chal-chip">Knowledge</span>
+              <h3>Hard to Retain &amp; Transfer</h3>
+              <ul>
+                <li>Scattered across chats, files, individual heads</li>
+                <li>New engineers face a long ramp-up</li>
+              </ul>
+            </div>
+            <div class="chal-card impact">
+              <span class="chal-chip">Target</span>
+              <h3>Where Sherlock steps in</h3>
+              <p>Automate the repeatable hunt and capture the fast path, so every case starts from a playbook — not from scratch.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 3: How Sherlock runs -->
+      <section class="slide slide-map" data-slide="3">
+        <div class="slide-header">
+          <span class="brand">How Sherlock runs</span>
+          <span class="slide-num">3 / 7</span>
+        </div>
+        <h1>Workflow map <span class="pill current">Working model</span></h1>
+        <div class="content">
+          <div class="map-frame-wrap">
+            <div class="map-frame-inner">
+              <iframe src="sherlock-how-it-runs-map-v2.html?embed=1" title="Sherlock end-to-end flow map"></iframe>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 4: Key artifacts -->
+      <section class="slide slide-map" data-slide="4">
+        <div class="slide-header">
+          <span class="brand">Memory &amp; outputs</span>
+          <span class="slide-num">4 / 7</span>
+        </div>
+        <h1>How one case becomes reusable knowledge</h1>
+        <div class="content">
+          <div class="map-frame-wrap">
+            <div class="map-frame-inner">
+              <iframe src="sherlock-key-artifacts-v2.html?embed=1" title="Sherlock key artifacts"></iframe>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 5: Executive dashboard -->
+      <section class="slide external-slide" data-slide="5">
+        <iframe src="sherlock-executive-dashboard.html" title="Sherlock executive accuracy dashboard"></iframe>
+      </section>
+
+      <!-- Slide 6: Sherlock vs PES comparison -->
+      <section class="slide external-slide" data-slide="6">
+        <iframe src="sherlock-pes-comparison.html" title="Sherlock versus actual PES comparison"></iframe>
+      </section>
+
+      <!-- Slide 7: 3 real-world examples -->
+      <section class="slide slide-map" data-slide="7">
+        <div class="slide-header">
+          <span class="brand">Evidence in practice</span>
+          <span class="slide-num">7 / 7</span>
+        </div>
+        <h1>Sherlock: 3 Real-World Examples</h1>
+        <div class="content">
+          <div class="map-frame-wrap">
+            <div class="map-frame-inner">
+              <iframe src="sherlock-real-world-examples.html?embed=1" title="Sherlock three real-world examples"></iframe>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <nav class="nav" aria-label="Slide navigation">
+        <button type="button" id="prev" aria-label="Previous slide">←</button>
+        <span id="counter">1 / 7</span>
+        <button type="button" id="next" aria-label="Next slide">→</button>
+      </nav>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const BASE_WIDTH = 1280;
+      const BASE_HEIGHT = 720;
+      const deck = document.getElementById("deck");
+      const slides = Array.from(document.querySelectorAll(".slide"));
+      const total = slides.length;
+      let current = 0;
+      const progress = document.getElementById("progress");
+      const counter = document.getElementById("counter");
+
+      function fitDeckToViewport() {
+        const scale = Math.min(
+          window.innerWidth / BASE_WIDTH,
+          window.innerHeight / BASE_HEIGHT
+        );
+        deck.style.transform = `scale(${scale})`;
+      }
+
+      function show(index) {
+        if (index < 0 || index >= total) return;
+        slides[current].classList.remove("active");
+        current = index;
+        slides[current].classList.add("active");
+        progress.style.width = ((current + 1) / total * 100) + "%";
+        counter.textContent = (current + 1) + " / " + total;
+      }
+
+      document.getElementById("prev").addEventListener("click", () => show(current - 1));
+      document.getElementById("next").addEventListener("click", () => show(current + 1));
+      window.addEventListener("resize", fitDeckToViewport);
+
+      fitDeckToViewport();
+      show(0);
+    })();
+  </script>
+</body>
+</html>
